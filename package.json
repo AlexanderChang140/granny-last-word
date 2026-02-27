@@ -1,0 +1,31 @@
+{
+    "name": "granny-last-word",
+    "version": "1.0.0",
+    "description": "",
+    "homepage": "https://github.com/AlexanderChang140/granny-last-word#readme",
+    "bugs": {
+        "url": "https://github.com/AlexanderChang140/granny-last-word/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/AlexanderChang140/granny-last-word.git"
+    },
+    "license": "ISC",
+    "author": "",
+    "type": "module",
+    "main": "index.js",
+    "scripts": {
+        "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+        "dev:backend": "npm run dev --prefix backend",
+        "dev:frontend": "npm run dev --prefix frontend"
+    },
+    "private": true,
+    "workspaces": [
+        "frontend",
+        "backend",
+        "shared"
+    ],
+    "devDependencies": {
+        "concurrently": "^9.2.1"
+    }
+}

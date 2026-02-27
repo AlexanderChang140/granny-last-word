@@ -1,0 +1,7 @@
+.env
+node_modules
+temp
+output.txt
+test.temp.ts
+.vs
+.vscode
