@@ -7,6 +7,7 @@
         "dev": "nodemon --watch src --exec tsx src/index.ts"
     },
     "devDependencies": {
+        "@types/cookie-parser": "^1.4.10",
         "@types/express": "^5.0.6",
         "@types/node": "^25.3.2",
         "nodemon": "^3.1.14",
@@ -17,6 +18,7 @@
     },
     "dependencies": {
         "argon2": "^0.44.0",
+        "cookie-parser": "^1.4.7",
         "dotenv": "^17.3.1",
         "express": "^5.2.1",
         "pg": "^8.19.0"
