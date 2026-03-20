@@ -33,10 +33,6 @@ app.use(express.json());
 app.use('/', router);
 app.use('/api', authRouter);
 
-// A Map to store active game sessions in memory.
-// Key: Socket ID (the unique connection) | Value: GameState object
-const activeBattles = new Map();
-
 io.on("connection", (socket) => {
    connect(socket);
 });
