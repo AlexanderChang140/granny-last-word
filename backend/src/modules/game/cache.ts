@@ -22,7 +22,7 @@ export async function set(sessionId: string, data: SessionData) {
     });
 }
 
-export async function update(sessionId: string, updater: (current: SessionData) => SessionData) {
+export async function update(sessionId: string, updater: (prev: SessionData) => SessionData) {
     const mutex = getLock(sessionId);
     
     return await mutex.runExclusive(() => {
