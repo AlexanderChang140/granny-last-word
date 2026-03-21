@@ -1,6 +1,6 @@
-import type { Socket } from 'socket.io';
-import { remove, update } from './cache.js';
-import { GameEngine, type GameState } from './engine.js';
+import type { Socket } from "socket.io";
+import { remove, set, update } from "./cache.js";
+import { GameEngine, type GameState } from "./engine.js";
 
 /**
  * START BATTLE:
@@ -11,6 +11,14 @@ export async function startBattle(socket: Socket) {
     const initialState = GameEngine.setupNewBattle();
     await updateGameState(socket.id, () => initialState);
 
+    /*
+    //temp to get game running with gui
+    await set(socket.id, {
+        gameState: initialState,
+    });
+    */
+
+     
     // Sends the initial state to the client
     socket.emit('state_update', initialState);
 }
