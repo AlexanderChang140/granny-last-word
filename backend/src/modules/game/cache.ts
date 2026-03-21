@@ -22,6 +22,19 @@ export async function set(sessionId: string, data: SessionData) {
     });
 }
 
+export async function update(sessionId: string, updater: (prev: SessionData) => SessionData) {
+    const mutex = getLock(sessionId);
+    
+    return await mutex.runExclusive(() => {
+        const current = cache.get(sessionId);
+        if (!current) throw new Error("Session not found");
+
+        const newData = updater(current);
+        cache.set(sessionId, newData);
+        return newData;
+    });
+}
+
 export async function remove(sessionId: string): Promise<void> {
     const mutex = getLock(sessionId);
 
