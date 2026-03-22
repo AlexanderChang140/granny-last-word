@@ -1,5 +1,5 @@
-import type { GameState } from "./engine.js"
+import type { GameState } from './engine.js';
 
 export type SessionData = {
-    gameState: GameState;
-}
+    gameState?: GameState | undefined;
+};

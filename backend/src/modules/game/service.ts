@@ -1,6 +1,6 @@
-import type { Socket } from "socket.io";
-import { remove, update } from "./cache.js";
-import { GameEngine, type GameState } from "./engine.js";
+import type { Socket } from 'socket.io';
+import { remove, update } from './cache.js';
+import { GameEngine, type GameState } from './engine.js';
 
 /**
  * START BATTLE:
@@ -12,7 +12,7 @@ export async function startBattle(socket: Socket) {
     await updateGameState(socket.id, () => initialState);
 
     // Sends the initial state to the client
-    socket.emit("state_update", initialState);
+    socket.emit('state_update', initialState);
 }
 
 /**
@@ -25,38 +25,38 @@ export async function submitWord(socket: Socket, payload: any) {
         // Prevents attacks during enemy turn or after battle ends
         if (
             !state ||
-            state.turn_owner !== "player" ||
-            state.status !== "running"
+            state.turn_owner !== 'player' ||
+            state.status !== 'running'
         ) {
             console.log(
                 "ACTION BLOCKED - Not player's turn or battle not running",
             );
-            console.log("State:", state);
+            console.log('State:', state);
             return state;
         }
 
-        console.log("Processing Player Attack...");
-        console.log("Enemy HP before attack:", state.enemy_hp);
+        console.log('Processing Player Attack...');
+        console.log('Enemy HP before attack:', state.enemy_hp);
 
         // Use the engine to process the player's action and calculate the new state
         let newState = GameEngine.update(state, {
-            type: "PLAYER_ACTION",
+            type: 'PLAYER_ACTION',
             word: payload.word,
         });
 
         // Notify client of damage and new state so the scene can update
-        console.log("Enemy HP after attack:", newState.enemy_hp);
+        console.log('Enemy HP after attack:', newState.enemy_hp);
 
         /**
          * ENEMY TURN SIMULATION:
          */
-        if (newState.status === "running") {
+        if (newState.status === 'running') {
             newState = GameEngine.update(newState, {
-                type: "ENEMY_ACTION",
+                type: 'ENEMY_ACTION',
             });
         }
 
-        socket.emit("state_update", newState);
+        socket.emit('state_update', newState);
         return newState;
     });
 }
@@ -72,7 +72,7 @@ export function disconnect(socket: Socket) {
 
 async function updateGameState(
     id: string,
-    updater: (prev: GameState) => GameState,
+    updater: (prev: GameState | undefined) => GameState | undefined,
 ) {
     await update(id, (current) => {
         const nextGameState = updater(current.gameState);
