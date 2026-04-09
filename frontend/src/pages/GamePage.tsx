@@ -1,5 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import { GameClient, type GameState } from "../game/GameManager";
+import { useState } from "react";
+import PhaserBattle from "../components/PhaserBattle";
+import type { GameState } from "../game/GameManager";
+import type { BattleViewState, LetterTileData } from "../phaser/gameTypes";
+
+// Temporary frontend-only battle state for UI testing.
+// Final battle state should come from backend/socket events.
 
 const initialState: GameState = {
     player_hp: 100,
@@ -8,163 +13,269 @@ const initialState: GameState = {
     status: "running",
 };
 
-const initialHand = ["A", "R", "E", "T", "L", "O", "N"];
+const initialHand = ["A", "R", "E", "T", "L", "O", "N", "S", "D", "I"];
+
+function buildInitialTiles(): LetterTileData[] {
+    return initialHand.map((letter, index) => ({
+        id: `${letter}-${index}`,
+        letter,
+        zone: "hand",
+        order: index,
+    }));
+}
+
+function sortByOrder(a: LetterTileData, b: LetterTileData) {
+    return a.order - b.order;
+}
 
 export default function GamePage() {
-    const [gameState, setGameState] = useState<GameState>(initialState);
-    const [word, setWord] = useState("");
-    const [connected, setConnected] = useState(false);
-    const [lastSubmittedWord, setLastSubmittedWord] = useState("");
+    const [gameState] = useState<GameState>(initialState);
+    const [connected] = useState(true);
+    const [lastSubmittedWord] = useState("");
     const [battleStarted, setBattleStarted] = useState(false);
-    const [handLetters, setHandLetters] = useState<string[]>(initialHand);
-    const [usedLetterIndexes, setUsedLetterIndexes] = useState<number[]>([]);
-
-    const client = useMemo(() => {
-        return new GameClient({
-            onStateChange: (state: GameState) => {
-                setGameState(state);
-            },
-            onConnectionChange: ({ connected }) => {
-                setConnected(connected);
-            },
-        });
-    }, []);
-
-    useEffect(() => {
-        return () => {
-            client.destroy();
-        };
-    }, [client]);
-
-    function handleStartBattle() {
-        setBattleStarted(true);
-        client.startBattle();
-    }
-
-    function handleLetterClickByIndex(index: number) {
-        if (!isPlayerTurn) return;
-        if (usedLetterIndexes.includes(index)) return;
-
-        const letter = handLetters[index];
-        setWord((prev) => prev + letter);
-        setUsedLetterIndexes((prev) => [...prev, index]);
-    }
-
-    function handleBackspace() {
-        if (!isPlayerTurn) return;
-        if (!word.length || !usedLetterIndexes.length) return;
-
-        setWord((prev) => prev.slice(0, -1));
-        setUsedLetterIndexes((prev) => prev.slice(0, -1));
-    }
-
-    function handleClear() {
-        if (!isPlayerTurn) return;
-
-        setWord("");
-        setUsedLetterIndexes([]);
-    }
-
-    function handleDiscard() {
-        if (!isPlayerTurn) return;
-
-        setWord("");
-        setUsedLetterIndexes([]);
-        setHandLetters(["S", "D", "I", "C", "A", "R", "D"]);
-    }
-
-    function handleEndTurn() {
-        if (!battleStarted) return;
-
-        setWord("");
-        setUsedLetterIndexes([]);
-
-        // later this should emit an end turn event to backend
-        // client.endTurn();
-    }
-
-    function handleSubmit() {
-        if (!word.trim()) return;
-        if (gameState.turn_owner !== "player") return;
-        if (gameState.status !== "running") return;
-
-        client.sendAction(word.trim());
-        setLastSubmittedWord(word.trim());
-
-        const remainingLetters = handLetters.filter(
-            (_, index) => !usedLetterIndexes.includes(index),
-        );
-
-        const refillPool = ["M", "G", "U", "P", "H", "B", "Y", "C", "F", "K", "E", "A"];
-        const refillNeeded = handLetters.length - remainingLetters.length;
-        const refillLetters = refillPool.slice(0, refillNeeded);
-
-        setHandLetters([...remainingLetters, ...refillLetters]);
-        setWord("");
-        setUsedLetterIndexes([]);
-    }
+    const [tiles, setTiles] = useState<LetterTileData[]>(buildInitialTiles());
 
     const isPlayerTurn =
         battleStarted &&
         gameState.turn_owner === "player" &&
         gameState.status === "running";
 
-    const playerHpWidth = `${Math.max(0, Math.min(gameState.player_hp, 100))}%`;
-    const enemyHpWidth = `${Math.max(0, Math.min(gameState.enemy_hp, 100))}%`;
+    const wordTiles = tiles
+        .filter((tile) => tile.zone === "word")
+        .sort(sortByOrder);
 
-    const turnText =
-        gameState.status === "finished"
-            ? gameState.enemy_hp <= 0
-                ? "Victory!"
-                : "Defeat!"
-            : gameState.turn_owner === "player"
-              ? "Your Turn"
-              : "Enemy Turn";
+    const discardTiles = tiles
+        .filter((tile) => tile.zone === "discard")
+        .sort(sortByOrder);
 
-    useEffect(() => {
-        function handleKeyDown(event: KeyboardEvent) {
-            if (!battleStarted || !isPlayerTurn) return;
+    const [hasDiscardedThisTurn, setHasDiscardedThisTurn] = useState(false);
 
-            const key = event.key;
+    function rebuildTiles(
+        hand: LetterTileData[],
+        wordTilesNext: LetterTileData[],
+        discard: LetterTileData[],
+    ) {
+        const handNormalized = hand.map((tile, index) => ({
+            ...tile,
+            zone: "hand" as const,
+            order: index,
+        }));
 
-            if (event.ctrlKey && key === "Backspace") {
-                event.preventDefault();
-                handleClear();
-                return;
-            }
+        const wordNormalized = wordTilesNext.map((tile, index) => ({
+            ...tile,
+            zone: "word" as const,
+            order: index,
+        }));
 
-            if (key === "Backspace") {
-                event.preventDefault();
-                handleBackspace();
-                return;
-            }
+        const discardNormalized = discard.map((tile, index) => ({
+            ...tile,
+            zone: "discard" as const,
+            order: index,
+        }));
 
-            if (key === "Enter") {
-                event.preventDefault();
-                handleSubmit();
-                return;
-            }
+        return [...handNormalized, ...wordNormalized, ...discardNormalized];
+    }
 
-            if (/^[a-zA-Z]$/.test(key)) {
-                const upperKey = key.toUpperCase();
+    function moveTile(tileId: string, targetZone: "hand" | "word" | "discard", insertIndex?: number) {
+        if (!isPlayerTurn) return;
 
-                const availableIndex = handLetters.findIndex(
-                    (letter, index) =>
-                        letter === upperKey && !usedLetterIndexes.includes(index),
+        setTiles((prev) => {
+            const movingTile = prev.find((tile) => tile.id === tileId);
+            if (!movingTile) return prev;
+
+            const remaining = prev
+                .filter((tile) => tile.id !== tileId)
+                .map((tile) => ({ ...tile }));
+
+            const hand = remaining.filter((tile) => tile.zone === "hand").sort(sortByOrder);
+            const wordTilesNext = remaining.filter((tile) => tile.zone === "word").sort(sortByOrder);
+            const discard = remaining.filter((tile) => tile.zone === "discard").sort(sortByOrder);
+
+            const moved = { ...movingTile, zone: targetZone, order: 0 };
+
+            if (targetZone === "hand") {
+                hand.push(moved);
+            } else if (targetZone === "discard") {
+                discard.push(moved);
+            } else {
+                const safeIndex = Math.max(
+                    0,
+                    Math.min(insertIndex ?? wordTilesNext.length, wordTilesNext.length),
                 );
-
-                if (availableIndex !== -1) {
-                    event.preventDefault();
-                    handleLetterClickByIndex(availableIndex);
-                }
+                wordTilesNext.splice(safeIndex, 0, moved);
             }
+
+            return rebuildTiles(hand, wordTilesNext, discard);
+        });
+    }
+
+    function handleStartBattle() {
+        setBattleStarted(true);
+    }
+
+    function moveTileToWord(tileId: string, insertIndex?: number) {
+        moveTile(tileId, "word", insertIndex);
+    }
+
+    function moveTileToDiscard(tileId: string) {
+        moveTile(tileId, "discard");
+    }
+
+    function moveTileToHand(tileId: string) {
+        moveTile(tileId, "hand");
+    }
+
+    function handleLetterKeyPressed(letter: string) {
+        if (!isPlayerTurn) return;
+
+        setTiles((prev) => {
+            const hand = prev
+                .filter((tile) => tile.zone === "hand")
+                .sort(sortByOrder);
+
+            const target = hand.find((tile) => tile.letter.toUpperCase() === letter.toUpperCase());
+            if (!target) return prev;
+
+            const remaining = prev
+                .filter((tile) => tile.id !== target.id)
+                .map((tile) => ({ ...tile }));
+
+            const nextHand = remaining.filter((tile) => tile.zone === "hand").sort(sortByOrder);
+            const nextWord = remaining.filter((tile) => tile.zone === "word").sort(sortByOrder);
+            const nextDiscard = remaining.filter((tile) => tile.zone === "discard").sort(sortByOrder);
+
+            nextWord.push({ ...target, zone: "word", order: 0 });
+
+            return rebuildTiles(nextHand, nextWord, nextDiscard);
+        });
+    }
+
+    function handleBackspace() {
+        if (!isPlayerTurn || wordTiles.length === 0) return;
+        const lastTile = wordTiles[wordTiles.length - 1];
+        moveTile(lastTile.id, "hand");
+    }
+
+function handleClear() {
+    if (!battleStarted) return;
+
+    setTiles((prev) => {
+        const hand = prev
+            .filter((tile) => tile.zone === "hand")
+            .sort(sortByOrder);
+
+        const wordTilesNext = prev
+            .filter((tile) => tile.zone === "word")
+            .sort(sortByOrder);
+
+        const discardTilesNext = prev
+            .filter((tile) => tile.zone === "discard")
+            .sort(sortByOrder);
+
+        return rebuildTiles([...hand, ...wordTilesNext, ...discardTilesNext], [], []);
+    });
+}
+
+function handleEndTurn() {
+    if (!battleStarted) return;
+    setHasDiscardedThisTurn(false);
+
+    setTiles((prev) => {
+        const hand = prev
+            .filter((tile) => tile.zone === "hand")
+            .sort(sortByOrder);
+
+        const wordTilesNext = prev
+            .filter((tile) => tile.zone === "word")
+            .sort(sortByOrder);
+
+        const discardTilesNext = prev
+            .filter((tile) => tile.zone === "discard")
+            .sort(sortByOrder);
+
+        return rebuildTiles([...hand, ...wordTilesNext, ...discardTilesNext], [], []);
+    });
+}
+
+function handleSubmit() {
+    if (!battleStarted) return;
+
+    setTiles((prev) => {
+        const hand = prev
+            .filter((tile) => tile.zone === "hand")
+            .sort(sortByOrder);
+
+        const wordTilesNext = prev
+            .filter((tile) => tile.zone === "word")
+            .sort(sortByOrder);
+
+        const discardTilesNext = prev
+            .filter((tile) => tile.zone === "discard")
+            .sort(sortByOrder);
+
+        if (wordTilesNext.length === 0) {
+            return rebuildTiles([...hand, ...discardTilesNext], [], []);
         }
 
-        window.addEventListener("keydown", handleKeyDown);
-        return () => {
-            window.removeEventListener("keydown", handleKeyDown);
-        };
-    }, [battleStarted, isPlayerTurn, handLetters, usedLetterIndexes, word]);
+        const refillPool = ["M", "G", "U", "P", "H", "B", "Y", "C", "F", "K", "E", "A"];
+        const refillCount = wordTilesNext.length;
+
+        const refills: LetterTileData[] = refillPool
+            .slice(0, refillCount)
+            .map((letter, index) => ({
+                id: `submit-refill-${letter}-${Date.now()}-${index}`,
+                letter,
+                zone: "hand",
+                order: hand.length + discardTilesNext.length + index,
+            }));
+
+        return rebuildTiles([...hand, ...discardTilesNext, ...refills], [], []);
+    });
+}
+
+function handleDiscard() {
+    if (!isPlayerTurn || hasDiscardedThisTurn) return;
+
+    setTiles((prev) => {
+        const hand = prev
+            .filter((tile) => tile.zone === "hand")
+            .sort(sortByOrder);
+
+        const wordTilesNext = prev
+            .filter((tile) => tile.zone === "word")
+            .sort(sortByOrder);
+
+        const discard = prev
+            .filter((tile) => tile.zone === "discard")
+            .sort(sortByOrder);
+
+        if (discard.length === 0) return prev;
+
+        const refillPool = ["M", "G", "U", "P", "H", "B", "Y", "C", "F", "K", "E", "A"];
+        const refillCount = discard.length;
+
+        const refills: LetterTileData[] = refillPool
+            .slice(0, refillCount)
+            .map((letter, index) => ({
+                id: `discard-refill-${letter}-${Date.now()}-${index}`,
+                letter,
+                zone: "hand",
+                order: hand.length + index,
+            }));
+
+        return rebuildTiles([...hand, ...refills], wordTilesNext, []);
+    });
+
+    setHasDiscardedThisTurn(true);
+}
+
+    const phaserState: BattleViewState = {
+        connected,
+        battleStarted,
+        gameState,
+        lastSubmittedWord,
+        tiles,
+    };
 
     return (
         <div className="game-page">
@@ -181,133 +292,61 @@ export default function GamePage() {
                     </div>
                 )}
 
-                <section className="battle-top">
-                    <div className="landscape-sky" />
-                    <div className="landscape-hill hill-1" />
-                    <div className="landscape-hill hill-2" />
-                    <div className="landscape-hill hill-3" />
+                <PhaserBattle
+                    state={phaserState}
+                    onTileToWord={moveTileToWord}
+                    onTileToDiscard={moveTileToDiscard}
+                    onTileToHand={moveTileToHand}
+                    onLetterKeyPressed={handleLetterKeyPressed}
+                    onSubmitPressed={handleSubmit}
+                    onBackspacePressed={handleBackspace}
+                    onClearPressed={handleClear}
+                    onEndTurnPressed={handleEndTurn}
+                />
 
-                    <div className="battle-center-banner">
-                        <p>{connected ? "Connected" : "Connecting..."}</p>
-                        <p>{turnText}</p>
-                    </div>
+                <div className="battle-overlay-buttons left">
+                    <button
+                        className="battle-button side-button"
+                        onClick={handleDiscard}
+                        disabled={!isPlayerTurn || discardTiles.length === 0 || hasDiscardedThisTurn}
+                    >
+                        Discard
+                    </button>
+                </div>
 
-                    <div className="top-hud">
-                        <div className="hp-side">
-                            <div className="hp-header">
-                                <span>Player HP</span>
-                            </div>
-                            <div className="hp-bar-frame">
-                                <div className="hp-bar">
-                                    <div className="hp-fill" style={{ width: playerHpWidth }} />
-                                </div>
-                            </div>
-                            <div className="hp-number">{gameState.player_hp} / 100</div>
-                        </div>
+                <div className="battle-overlay-buttons right">
+                    <button
+                        className="battle-button side-button"
+                        onClick={handleBackspace}
+                        disabled={!isPlayerTurn || wordTiles.length === 0}
+                    >
+                        Backspace
+                    </button>
 
-                        <div className="hp-side right">
-                            <div className="hp-header">
-                                <span>Enemy HP</span>
-                            </div>
-                            <div className="hp-bar-frame">
-                                <div className="hp-bar">
-                                    <div className="hp-fill" style={{ width: enemyHpWidth }} />
-                                </div>
-                            </div>
-                            <div className="hp-number">{gameState.enemy_hp} / 100</div>
-                        </div>
-                    </div>
+                    <button
+                        className="battle-button side-button"
+                        onClick={handleClear}
+                        disabled={!isPlayerTurn || wordTiles.length === 0}
+                    >
+                        Clear
+                    </button>
 
-                    <div className="character-slot player-slot">
-                        <div className="character-emoji">👵</div>
-                        <div className="character-name">Player</div>
-                    </div>
+                    <button
+                        className="battle-button primary side-button"
+                        onClick={handleSubmit}
+                        disabled={!isPlayerTurn || wordTiles.length === 0}
+                    >
+                        Submit
+                    </button>
 
-                    <div className="character-slot enemy-slot">
-                        <div className="character-emoji">🧌</div>
-                        <div className="character-name">Enemy</div>
-                    </div>
-                </section>
-
-                <div className="battle-divider" />
-
-                <section className="battle-bottom">
-                    <div className="battle-side-buttons left">
-                        <button
-                            className="battle-button side-button"
-                            onClick={handleDiscard}
-                            disabled={!isPlayerTurn}
-                        >
-                            Discard
-                        </button>
-                    </div>
-
-                    <div className="battle-main-stack">
-                        <div className="word-space">
-                            <div className="panel-title">Word Crafting</div>
-                            <div className="built-word">{word || "_"}</div>
-                        </div>
-
-                        <div className="letter-deck">
-                            <div className="letter-row">
-                                {handLetters.map((letter, index) => {
-                                    const isUsed = usedLetterIndexes.includes(index);
-
-                                    return (
-                                        <button
-                                            key={`${letter}-${index}`}
-                                            className="letter-tile"
-                                            onClick={() => handleLetterClickByIndex(index)}
-                                            disabled={!isPlayerTurn || isUsed}
-                                        >
-                                            {letter}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        <div className="battle-status-box">
-                            <span>Last Word: {lastSubmittedWord || "None"}</span>
-                            <span>Status: {gameState.status}</span>
-                            <span>Turn: {gameState.turn_owner}</span>
-                        </div>
-                    </div>
-
-                    <div className="battle-side-buttons right">
-                        <button
-                            className="battle-button side-button"
-                            onClick={handleBackspace}
-                            disabled={!isPlayerTurn || !word.length}
-                        >
-                            Backspace
-                        </button>
-
-                        <button
-                            className="battle-button side-button"
-                            onClick={handleClear}
-                            disabled={!isPlayerTurn || !word.length}
-                        >
-                            Clear
-                        </button>
-
-                        <button
-                            className="battle-button primary side-button"
-                            onClick={handleSubmit}
-                            disabled={!isPlayerTurn || !word.trim()}
-                        >
-                            Submit
-                        </button>
-
-                        <button
-                            className="battle-button side-button"
-                            onClick={handleEndTurn}
-                            disabled={!isPlayerTurn}
-                        >
-                            End Turn
-                        </button>
-                    </div>
-                </section>
+                    <button
+                        className="battle-button side-button"
+                        onClick={handleEndTurn}
+                        disabled={!isPlayerTurn}
+                    >
+                        End Turn
+                    </button>
+                </div>
             </div>
         </div>
     );

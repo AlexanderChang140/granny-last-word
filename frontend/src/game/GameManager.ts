@@ -7,11 +7,6 @@ export interface GameState {
     status: "running" | "finished";
 }
 
-/**
- * GameClient: The "Bridge" between frontend and backend
- * This class manages the WebSocket connection and state updates.
- */
-
 export type ConnectionState = {
     connected: boolean;
     lastError: string | null;

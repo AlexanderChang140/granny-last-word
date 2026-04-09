@@ -15,7 +15,8 @@ export default function LoginPage() {
         setIsSubmitting(true);
 
         try {
-            const response = await fetch("http://localhost:3000/api/login", {
+            const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+            const response = await fetch(`${API_URL}/api/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
