@@ -14,9 +14,8 @@ export default function LoginPage() {
         setErrorMessage("");
         setIsSubmitting(true);
 
-        try {
-            const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
-            const response = await fetch(`${API_URL}/api/login`, {
+        try {;
+            const response = await fetch('api/login', {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -36,7 +35,8 @@ export default function LoginPage() {
             }
 
             navigate("/game");
-        } catch {
+        } catch (error) {
+            console.error(error);
             setErrorMessage("Could not connect to the server.");
         } finally {
             setIsSubmitting(false);
