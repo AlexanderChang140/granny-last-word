@@ -6,6 +6,11 @@ export interface GameState {
     status: 'running' | 'finished';
 }
 
+export interface Action {
+    type: 'PLAYER_ACTION' | 'ENEMY_ACTION'
+    word?: string
+}
+
 /**
  * This should house all the core game logic. It is meant to be an intuitive interface for the game. 
  * Ideally, no databases or sockets should be touched here - it should just be logic.
@@ -27,7 +32,7 @@ export class GameEngine {
      * @param action - Object containing 'type' (PLAYER_ACTION/ENEMY_ACTION) and optional data.
      * @returns A brand new GameState object.
      */
-    static update(state: GameState, action: { type: string, word?: string }): GameState {
+    static update(state: GameState, action: Action): GameState {
         // Create a copy so the original remains unchanged/immutable
         const nextState = { ...state };
 
