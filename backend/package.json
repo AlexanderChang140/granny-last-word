@@ -4,7 +4,8 @@
     "main": "index.js",
     "scripts": {
         "build": "tsup src/index.ts --clean",
-        "dev": "nodemon --watch src --exec tsx src/index.ts"
+        "dev": "nodemon --watch src --exec tsx src/index.ts",
+        "test": "vitest"
     },
     "devDependencies": {
         "@types/cookie-parser": "^1.4.10",
