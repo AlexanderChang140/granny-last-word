@@ -1,3 +1,5 @@
+import { scoreWord } from "./word/validation.js";
+
 // State Definitions 
 export interface GameState {
     player_hp: number;
@@ -39,11 +41,15 @@ export class GameEngine {
         console.log("Engine received action type:", action.type);
 
         // Handle Player Action
-        if (action.type === 'PLAYER_ACTION') {
+        if (action.type === 'PLAYER_ACTION' && action.word) {
             console.log("Match found! Reducing Enemy HP...");
 
-            // TODO: Integrate word validation logic here
-            nextState.enemy_hp -= 20; // Placeholder damage
+            const score = scoreWord(action.word);
+            if (score === 0) {
+                return state;
+            }
+
+            nextState.enemy_hp -= score;
             nextState.turn_owner = 'enemy';
         }
 
