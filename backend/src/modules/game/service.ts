@@ -50,7 +50,7 @@ export async function submitWord(socket: Socket, payload: any) {
         /**
          * ENEMY TURN SIMULATION:
          */
-        if (newState.status === 'running') {
+        if (newState.turn_owner === 'enemy' && newState.status === "running") {
             newState = GameEngine.update(newState, {
                 type: 'ENEMY_ACTION',
             });
