@@ -2,25 +2,16 @@ import "./App.css";
 import { BrowserRouter, Route, Routes } from "react-router";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
+import GamePage from "./pages/GamePage";
 
-function PlaceholderGamePage() {
-    return (
-        <div className="auth-page">
-            <div className="auth-card">
-                <h1>Game Screen Placeholder</h1>
-                <p>You logged in successfully.</p>
-            </div>
-        </div>
-    );
-}
-
+//TODO: make /game require authentication
 function App() {
     return (
         <BrowserRouter>
             <Routes>
                 <Route path="/" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
-                <Route path="/game" element={<PlaceholderGamePage />} />
+                <Route path="/game" element={<GamePage />} />
             </Routes>
         </BrowserRouter>
     );

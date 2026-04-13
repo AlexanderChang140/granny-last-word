@@ -1,6 +1,6 @@
-import type { Socket } from 'socket.io';
-import { remove, update } from './cache.js';
-import { GameEngine, type GameState } from './engine.js';
+import type { Socket } from "socket.io";
+import { remove, set, update } from "./cache.js";
+import { GameEngine, type GameState } from "./engine.js";
 
 /**
  * START BATTLE:
@@ -9,10 +9,12 @@ import { GameEngine, type GameState } from './engine.js';
  */
 export async function startBattle(socket: Socket) {
     const initialState = GameEngine.setupNewBattle();
-    await updateGameState(socket.id, () => initialState);
 
-    // Sends the initial state to the client
-    socket.emit('state_update', initialState);
+    await set(socket.id, {
+        gameState: initialState,
+    });
+
+    socket.emit("state_update", initialState);
 }
 
 /**
@@ -21,8 +23,6 @@ export async function startBattle(socket: Socket) {
  */
 export async function submitWord(socket: Socket, payload: any) {
     await updateGameState(socket.id, (state) => {
-        // TURN GUARD: Only process if it is the player's turn
-        // Prevents attacks during enemy turn or after battle ends
         if (
             !state ||
             state.turn_owner !== 'player' ||
@@ -38,14 +38,12 @@ export async function submitWord(socket: Socket, payload: any) {
         console.log('Processing Player Attack...');
         console.log('Enemy HP before attack:', state.enemy_hp);
 
-        // Use the engine to process the player's action and calculate the new state
         let newState = GameEngine.update(state, {
             type: 'PLAYER_ACTION',
             word: payload.word,
         });
 
-        // Notify client of damage and new state so the scene can update
-        console.log('Enemy HP after attack:', newState.enemy_hp);
+        console.log("Enemy HP after attack:", newState.enemy_hp);
 
         /**
          * ENEMY TURN SIMULATION:
