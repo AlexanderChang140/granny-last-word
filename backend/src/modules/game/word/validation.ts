@@ -1,5 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import type { Letter } from '../engine.js';
+import { toWord } from '../deck.js';
 
 const WORD_SET = await generateWordSet();
 
@@ -32,7 +34,9 @@ const SCORE_MAP: Record<string, number> = {
     Z: 10,
 };
 
-export function scoreWord(word: string) {
+export function scoreWord(letters: Letter[]) {
+    const word = toWord(letters);
+
     if (!WORD_SET.has(word.toUpperCase())) {
         return 0;
     }

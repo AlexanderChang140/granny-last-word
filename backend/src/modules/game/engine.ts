@@ -1,30 +1,58 @@
-import { scoreWord } from "./word/validation.js";
+import {
+    arrToLetters,
+    checkLetters,
+    drawLetters,
+    parseWord,
+    useLetters,
+} from './deck.js';
+import { scoreWord } from './word/validation.js';
 
-// State Definitions 
+// State Definitions
+export interface Letter {
+    id: number;
+    letter: string;
+}
+
+export interface Action {
+    type: 'PLAYER_ACTION' | 'ENEMY_ACTION';
+    word?: number[];
+}
+
 export interface GameState {
     player_hp: number;
     enemy_hp: number;
     turn_owner: 'player' | 'enemy';
     status: 'running' | 'finished';
-}
-
-export interface Action {
-    type: 'PLAYER_ACTION' | 'ENEMY_ACTION'
-    word?: string
+    draw: Letter[];
+    discard: Letter[];
+    hand: Letter[];
 }
 
 /**
- * This should house all the core game logic. It is meant to be an intuitive interface for the game. 
+ * This should house all the core game logic. It is meant to be an intuitive interface for the game.
  * Ideally, no databases or sockets should be touched here - it should just be logic.
  */
 export class GameEngine {
-
     static setupNewBattle(): GameState {
+        const handSize = DEFAULT_HAND_SIZE;
+        let draw = arrToLetters(['a', 'b', 'c', 'd', 'e', 'f', 't']);
+        let hand: Letter[] = [];
+        for (let i = 0; i < handSize; i++) {
+            const letter = draw.pop();
+            if (letter === undefined) {
+                break;
+            }
+            hand.push(letter);
+        }
+
         return {
             player_hp: 100,
             enemy_hp: 100,
             turn_owner: 'player',
-            status: 'running'
+            status: 'running',
+            draw,
+            discard: [],
+            hand,
         };
     }
 
@@ -36,18 +64,42 @@ export class GameEngine {
      */
     static update(state: GameState, action: Action): GameState {
         // Create a copy so the original remains unchanged/immutable
-        const nextState = { ...state };
+        let nextState = { ...state };
 
-        console.log("Engine received action type:", action.type);
+        console.log('Engine received action type:', action.type);
 
         // Handle Player Action
         if (action.type === 'PLAYER_ACTION' && action.word) {
-            console.log("Match found! Reducing Enemy HP...");
+            console.log('Match found! Reducing Enemy HP...');
 
-            const score = scoreWord(action.word);
-            if (score === 0) {
-                return state;
+            // Check if letters of word exists in hand
+            if (!checkLetters(action.word, nextState.hand)) {
+                return nextState;
             }
+
+            // Check and score if letters make up valid word
+            const letters = parseWord(action.word, nextState.hand);
+            const score = scoreWord(letters);
+            if (score === 0) {
+                return nextState;
+            }
+
+            // Move letters to discard
+            nextState = {
+                ...nextState,
+                ...useLetters(action.word, nextState.hand, nextState.discard),
+            };
+
+            // Draw new letters
+            nextState = {
+                ...nextState,
+                ...drawLetters(
+                    nextState.hand,
+                    nextState.draw,
+                    nextState.discard,
+                    getHandSize(nextState),
+                ),
+            };
 
             nextState.enemy_hp -= score;
             nextState.turn_owner = 'enemy';
@@ -66,4 +118,10 @@ export class GameEngine {
 
         return nextState;
     }
+}
+
+const DEFAULT_HAND_SIZE = 7;
+
+function getHandSize(gameState: GameState) {
+    return DEFAULT_HAND_SIZE;
 }
