@@ -4,6 +4,7 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import GamePage from "./pages/GamePage";
 import MenuPage from "./pages/MenuPage";
+import ChatPage from "./pages/ChatPage";
 
 //TODO: make /game require authentication
 function App() {
@@ -14,6 +15,7 @@ function App() {
                 <Route path="/signup" element={<SignupPage />} />
                 <Route path="/game" element={<GamePage />} />
                 <Route path="/menu" element={<MenuPage />} />
+                <Route path="/chat" element={<ChatPage />} />
             </Routes>
         </BrowserRouter>
     );
