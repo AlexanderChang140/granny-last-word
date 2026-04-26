@@ -126,7 +126,13 @@ export class GameEngine {
 
         // Handle Enemy Turn
         if (action.type === 'ENEMY_ACTION') {
-            nextState.player_hp -= 10; // Placeholder damage
+            // Scale damage based on level
+            const damagePerLevel = {1: 10, 2: 15, 3: 20, 4: 25, 5: 30};
+            const currentLevel = nextState.level as keyof typeof damagePerLevel;
+            console.log(`Current Level: ${currentLevel}`);
+            console.log(`Current Damage: ${damagePerLevel[currentLevel]}`);
+
+            nextState.player_hp -= damagePerLevel[currentLevel];
             nextState.turn_owner = 'player';
         }
 

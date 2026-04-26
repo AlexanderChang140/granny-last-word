@@ -241,4 +241,81 @@ describe('Game Lifecycle Logic', () => {
         // The engine returns nextState without changes if checkLetters fails
         expect(res.turn_owner).toBe('player');
     });
+
+    describe('Player HP Scaling', () => {
+        it('should reduce player HP by 10 on Level 1 ', () => {
+            // Arrange: Start at Level 1 with full HP
+            let state = {
+                ...GameEngine.setupNewBattle(1),
+                player_hp: 100,
+                turn_owner: 'enemy' as const // Force enemy turn to simulate a failed word
+            };
+
+            // Act: Execute the enemy action
+            const nextState = GameEngine.update(state, { type: 'ENEMY_ACTION' });
+
+            expect(nextState.player_hp).toBe(90);
+            expect(nextState.status).toBe('running');
+        });
+
+        it('should reduce player HP by 30 on Level 5', () => {
+            // Arrange: Start at Level 5
+            let state = {
+                ...GameEngine.setupNewBattle(5),
+                player_hp: 100,
+                turn_owner: 'enemy' as const
+            };
+
+            // Act: Execute enemy action
+            const nextState = GameEngine.update(state, { type: 'ENEMY_ACTION' });
+            console.log(`Player HP after enemy action on Level 5: ${nextState.player_hp}`);
+            
+            expect(nextState.player_hp).toBe(70);
+            expect(nextState.status).toBe('running');
+        });
+    });
+
+    it('should punish an invalid word with level-specific damage', () => {
+        const state = {
+            ...GameEngine.setupNewBattle(5),
+            player_hp: 100,
+            enemy_hp: 10,
+            hand: [{ id: 7, letter: 'A' }, {id: 89, letter: 'B'}, {id: 34, letter: 'A'}],
+        };
+
+        // 1. Player submits invalid word (ID not in hand)
+        const midState = GameEngine.update(state, { type: 'PLAYER_ACTION', word: [7] });
+        console.log(`Turn owner after invalid word: ${midState.turn_owner}`);
+        expect(midState.turn_owner).toBe('enemy');
+
+        // 2. Enemy takes their turn
+        const finalState = GameEngine.update(midState, { type: 'ENEMY_ACTION' });
+        
+        expect(finalState.player_hp).toBe(70);
+    });
+
+    it('should reduce enemy HP but NOT player HP on a successful word', () => {
+        // Arrange: Level 5 (where mistakes are lethal)
+        const state = {
+            ...GameEngine.setupNewBattle(5),
+            player_hp: 100,
+            enemy_hp: 10,
+            hand: [{ id: 7, letter: 'A' }, {id: 89, letter: 'B'}, {id: 34, letter: 'A'}],
+        };
+
+        // Act: Player scores a valid word
+        const res = GameEngine.update(state, {
+            type: 'PLAYER_ACTION',
+            word: [7, 89, 34], // "ABA" = 1 + 3 + 1 = 5 damage
+        });
+
+        // Assert: 
+        // Enemy HP should drop (assuming 'A' scores > 0)
+        expect(res.enemy_hp).toBeLessThanOrEqual(95);
+        // Player HP should remain exactly 100
+        expect(res.player_hp).toBe(100);
+        // The game should still be running
+        expect(res.status).toBe('running');
+    });
+
 });
