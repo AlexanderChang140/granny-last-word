@@ -49,7 +49,7 @@ export function scoreWord(letters: Letter[]) {
 }
 
 async function generateWordSet(): Promise<Set<string>> {
-    const filePath = path.join(process.cwd(), 'dictionary.txt');
+    const filePath = path.join(process.cwd(), 'backend', 'dictionary.txt');
 
     try {
         const data = await readFile(filePath, 'utf-8');

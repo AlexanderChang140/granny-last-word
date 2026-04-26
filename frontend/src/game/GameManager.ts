@@ -5,6 +5,7 @@ export interface GameState {
     enemy_hp: number;
     turn_owner: "player" | "enemy";
     status: "running" | "finished";
+    result: "GAME_WON" | "GAME_LOST" | "ROUND_WON";
 }
 
 export type ConnectionState = {
@@ -44,6 +45,14 @@ export class GameClient {
         });
 
         this.socket.on("state_update", (state: GameState) => {
+            // HANDLE GAME WIN/LOSS
+            if (state.status === "finished") {
+                if (state.result === "GAME_WON") {
+                alert("Congratulations! You've defeated Granny's final challenge!");
+                } else if (state.result === "GAME_LOST") {
+                alert("Game Over. You ran out of HP!");
+            }
+    }
             this.onStateChange(state);
         });
     }
