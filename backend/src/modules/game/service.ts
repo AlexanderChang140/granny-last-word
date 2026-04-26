@@ -45,13 +45,41 @@ export async function submitWord(socket: Socket, payload: any) {
 
         console.log("Enemy HP after attack:", newState.enemy_hp);
 
+        /** 
+         * CHECK FOR ROUND END or GAME END
+         * If the player cleared the round, start the next round.
+         */
+        if (newState.status === 'finished') {
+            if (newState.result === 'GAME_WON') {
+                console.log('Final level cleared. Game won!');
+
+                socket.emit('state_update', newState);
+                return newState;
+            }
+
+            if (newState.result === 'ROUND_WON') {
+                console.log('Level ${newState.level} cleared. Starting new round - level ${newState.level + 1}');
+
+                newState = GameEngine.setupNewBattle(newState.level + 1);
+
+                socket.emit('state_update', newState);
+                return newState;
+            }
+        }
+        
         /**
-         * ENEMY TURN SIMULATION:
+         * ENEMY TURN SIMULATION and GAME LOSS CHECK
          */
         if (newState.turn_owner === 'enemy' && newState.status === "running") {
             newState = GameEngine.update(newState, {
                 type: 'ENEMY_ACTION',
             });
+
+            // GAME LOSS CHECK
+            if (newState.result === 'GAME_LOST') {
+                console.log('GAME LOST!');
+                socket.emit('state_update', newState);
+            }
         }
 
         socket.emit('state_update', newState);

@@ -21,19 +21,30 @@ export interface Action {
 export interface GameState {
     player_hp: number;
     enemy_hp: number;
+    level: number;
     turn_owner: 'player' | 'enemy';
     status: 'running' | 'finished';
+    result?: 'ROUND_WON' | 'GAME_WON' | 'GAME_LOST';
     draw: Letter[];
     discard: Letter[];
     hand: Letter[];
 }
+
+const LEVEL_MAP: Record<number, number> = {
+    1: 100,
+    2: 125,
+    3: 150,
+    4: 175,
+    5: 200,
+};
+
 
 /**
  * This should house all the core game logic. It is meant to be an intuitive interface for the game.
  * Ideally, no databases or sockets should be touched here - it should just be logic.
  */
 export class GameEngine {
-    static setupNewBattle(): GameState {
+    static setupNewBattle(level: number = 1): GameState {
         const handSize = DEFAULT_HAND_SIZE;
         let draw = arrToLetters(['a', 'b', 'c', 'd', 'e', 'f', 't']);
         let hand: Letter[] = [];
@@ -47,7 +58,8 @@ export class GameEngine {
 
         return {
             player_hp: 100,
-            enemy_hp: 100,
+            enemy_hp: LEVEL_MAP[level] || 200, //200 used as fallback for levels above 5
+            level,
             turn_owner: 'player',
             status: 'running',
             draw,
@@ -63,14 +75,18 @@ export class GameEngine {
      * @returns A brand new GameState object.
      */
     static update(state: GameState, action: Action): GameState {
-        // Create a copy so the original remains unchanged/immutable
-        let nextState = { ...state };
+        // Create a deep copy so arrays aren't shared with original state
+        let nextState: GameState = {
+            ...state,
+            hand: [...state.hand],
+            draw: [...state.draw],
+            discard: [...state.discard],
+        };
 
         console.log('Engine received action type:', action.type);
 
         // Handle Player Action
         if (action.type === 'PLAYER_ACTION' && action.word) {
-            console.log('Match found! Reducing Enemy HP...');
 
             // Check if letters of word exists in hand
             if (!checkLetters(action.word, nextState.hand)) {
@@ -80,7 +96,10 @@ export class GameEngine {
             // Check and score if letters make up valid word
             const letters = parseWord(action.word, nextState.hand);
             const score = scoreWord(letters);
+            console.log(`Score: ${score}`);
             if (score === 0) {
+                console.log('Invalid word, player loses turn.');
+                nextState.turn_owner = 'enemy'; // pass turn to enemy to deal damage
                 return nextState;
             }
 
@@ -107,13 +126,31 @@ export class GameEngine {
 
         // Handle Enemy Turn
         if (action.type === 'ENEMY_ACTION') {
-            nextState.player_hp -= 10; // Placeholder damage
+            // Scale damage based on level
+            const damagePerLevel = {1: 10, 2: 15, 3: 20, 4: 25, 5: 30};
+            const currentLevel = nextState.level as keyof typeof damagePerLevel;
+            console.log(`Current Level: ${currentLevel}`);
+            console.log(`Current Damage: ${damagePerLevel[currentLevel]}`);
+
+            nextState.player_hp -= damagePerLevel[currentLevel];
             nextState.turn_owner = 'player';
         }
 
-        // Check Win/Loss Condition
-        if (nextState.enemy_hp <= 0 || nextState.player_hp <= 0) {
+        // Check Win/Loss Conditions
+        if (nextState.player_hp <= 0) {    // Player dies -> total loss
             nextState.status = 'finished';
+            nextState.result = 'GAME_LOST';
+        }
+            
+        else if (nextState.enemy_hp <= 0) { // Enemy dies -> round win or game win if final level
+            nextState.status = 'finished';
+
+            if (nextState.level >= 5) { // Game win
+                nextState.result = 'GAME_WON';
+            }
+            else {
+                nextState.result = 'ROUND_WON';
+            }
         }
 
         return nextState;
