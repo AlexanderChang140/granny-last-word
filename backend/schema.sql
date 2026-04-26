@@ -52,3 +52,10 @@ CREATE TABLE IF NOT EXISTS "UsedWords" (
   state_id  INT REFERENCES "BattleState"(state_id) ON DELETE CASCADE,
   word_text VARCHAR(100) NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS "ForumPost" (
+  post_id     SERIAL PRIMARY KEY,
+  user_id     INT NOT NULL REFERENCES "User"(user_id) ON DELETE CASCADE,
+  content     VARCHAR(300) NOT NULL,
+  created_at  TIMESTAMP NOT NULL DEFAULT NOW()
+);
