@@ -34,7 +34,7 @@ export default function LoginPage() {
                 return;
             }
 
-            navigate("/game");
+            navigate("/menu");
         } catch (error) {
             console.error(error);
             setErrorMessage("Could not connect to the server.");

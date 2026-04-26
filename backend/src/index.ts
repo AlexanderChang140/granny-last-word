@@ -5,6 +5,7 @@ import { Server } from 'socket.io';
 import router from './modules/example/routes.js';
 import authRouter from './modules/auth/routes.js';
 import { connect } from './modules/game/socket.js';
+import forumRouter from './modules/forum/routes.js';
 
 
 /**
@@ -32,6 +33,7 @@ app.use(express.json());
 // REST Routes (Auth/Settings)
 app.use('/', router);
 app.use('/api', authRouter);
+app.use('/api/forum', forumRouter);
 
 io.on("connection", (socket) => {
    connect(socket);

@@ -475,7 +475,7 @@ input:focus {
 }
 
 .chat-card {
-    width: 700px;
+    width: 800px;
     max-width: 95%;
     padding: 2rem;
     border-radius: 28px;
@@ -549,4 +549,95 @@ input:focus {
     border-radius: 10px;
     border: 2px solid #3f2c1c;
     font-size: 1rem;
+}
+
+.forum-card {
+    text-align: left;
+}
+
+.forum-header {
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.forum-subtitle {
+    margin: 0.25rem 0 0;
+    color: #5a4330;
+    font-weight: 600;
+}
+
+.forum-meta {
+    margin: 0.5rem 0 0;
+    color: #7a5a3c;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.forum-box {
+    height: 360px;
+    background:
+        linear-gradient(180deg, rgba(255, 248, 236, 0.82), rgba(244, 228, 196, 0.78));
+}
+
+.forum-messages {
+    gap: 0.8rem;
+}
+
+.forum-post {
+    position: relative;
+    z-index: 2;
+    background: rgba(255, 250, 242, 0.92);
+    border: 2px solid #7b5a36;
+    border-radius: 14px;
+    padding: 0.9rem 1rem;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.forum-post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 0.45rem;
+    color: #2d1c11;
+    font-size: 0.92rem;
+}
+
+.forum-post-header span {
+    color: #6c523d;
+    font-size: 0.82rem;
+    white-space: nowrap;
+}
+
+.forum-post-content {
+    margin: 0;
+    color: #2d1c11;
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+.forum-input-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    margin-top: 1rem;
+}
+
+.forum-input {
+    flex: 1;
+    resize: none;
+    border-radius: 14px;
+    border: 3px solid #2d1c11;
+    padding: 0.85rem 1rem;
+    font: inherit;
+    color: #2d1c11;
+    background: rgba(255, 248, 236, 0.95);
+}
+
+.forum-character-count {
+    margin: 0.45rem 0 0;
+    text-align: right;
+    color: #6c523d;
+    font-size: 0.85rem;
+    font-weight: 700;
 }
