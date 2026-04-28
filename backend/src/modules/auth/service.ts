@@ -2,6 +2,11 @@ import crypto from 'crypto';
 import argon2 from 'argon2';
 import pool from '../db/db.js';
 
+export interface User {
+    id: number;
+    username: string;
+}
+
 export async function signup(username: string, password: string) {
     const hash = await argon2.hash(password, {
         type: argon2.argon2id,
@@ -42,7 +47,7 @@ export async function logout(token: string) {
 }
 
 export async function validateSession(token: string) {
-    const result = await pool.query<{ id: number, username: string }>(
+    const result = await pool.query<User>(
         `SELECT u.id, u.username FROM sessions s 
          JOIN users u ON s.user_id = u.id 
          WHERE s.id = $1 AND s.expires_at > NOW()`,

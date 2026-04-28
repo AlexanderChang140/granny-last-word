@@ -12,7 +12,7 @@ export async function getPosts(_req: Request, res: Response) {
 
 export async function postPost(req: Request, res: Response) {
     try {
-        const username = res.locals.user as string;
+        const username = res.locals.user.username;
         const content = req.body.content?.toString() ?? "";
 
         if (!content.trim()) {
