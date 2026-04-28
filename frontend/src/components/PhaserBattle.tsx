@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "react";
 import eventBus from "../phaser/eventBus";
 import { createPhaserGame, destroyPhaserGame } from "../phaser";
-import type { BattleViewState } from "../phaser/gameTypes";
+import type { BattleViewState } from "../game/types";
 
 type PhaserBattleProps = {
     state: BattleViewState;
-    onTileToWord: (tileId: string, insertIndex?: number) => void;
-    onTileToDiscard: (tileId: string) => void;
-    onTileToHand: (tileId: string) => void;
+    onTileToWord: (tileId: number, insertIndex?: number) => void;
+    onTileToDiscard: (tileId: number) => void;
+    onTileToHand: (tileId: number) => void;
     onLetterKeyPressed: (letter: string) => void;
     onSubmitPressed: () => void;
     onBackspacePressed: () => void;
@@ -66,13 +66,13 @@ export default function PhaserBattle({
 
         createPhaserGame(containerRef.current);
 
-        const handleTileToWord = (payload: { tileId: string; insertIndex?: number }) =>
+        const handleTileToWord = (payload: { tileId: number; insertIndex?: number }) =>
             handlersRef.current.onTileToWord(payload.tileId, payload.insertIndex);
 
-        const handleTileToDiscard = (payload: { tileId: string }) =>
+        const handleTileToDiscard = (payload: { tileId: number }) =>
             handlersRef.current.onTileToDiscard(payload.tileId);
 
-        const handleTileToHand = (payload: { tileId: string }) =>
+        const handleTileToHand = (payload: { tileId: number }) =>
             handlersRef.current.onTileToHand(payload.tileId);
 
         const handleLetterKeyPressed = (payload: { letter: string }) =>

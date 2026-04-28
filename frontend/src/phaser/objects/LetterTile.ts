@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 
 type LetterTileConfig = {
-    id: string;
+    id: number;
     letter: string;
     x: number;
     y: number;
@@ -9,7 +9,7 @@ type LetterTileConfig = {
 };
 
 export default class LetterTile extends Phaser.GameObjects.Container {
-    public readonly tileId: string;
+    public readonly tileId: number;
     public readonly letter: string;
 
     private background: Phaser.GameObjects.Rectangle;

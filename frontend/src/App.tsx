@@ -2,7 +2,7 @@ import './App.css';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
-import GamePage from './pages/GamePage';
+import GamePage from './game/pages/GamePage';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './modules/auth/AuthProvider';

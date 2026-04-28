@@ -1,11 +1,5 @@
 import { io, Socket } from "socket.io-client";
-
-export interface GameState {
-    player_hp: number;
-    enemy_hp: number;
-    turn_owner: "player" | "enemy";
-    status: "running" | "finished";
-}
+import type { GameState } from "../../../shared/types";
 
 export type ConnectionState = {
     connected: boolean;

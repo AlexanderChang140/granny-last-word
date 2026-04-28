@@ -1,6 +1,5 @@
 import Phaser from "phaser";
 import eventBus from "../eventBus";
-import type { BattleViewState, LetterTileData } from "../gameTypes";
 import LetterTile from "../objects/LetterTile";
 import {
   BANNER_X,
@@ -27,10 +26,11 @@ import {
   getWordTilePosition,
   isInsideRect,
 } from "../systems/battleLayout";
+import type { BattleViewState, LetterTileData } from '../../game/types';
 
 export default class BattleScene extends Phaser.Scene {
   private battleState: BattleViewState | null = null;
-  private tileMap = new Map<string, LetterTile>();
+  private tileMap = new Map<number, LetterTile>();
 
   private playerHpFill!: Phaser.GameObjects.Rectangle;
   private enemyHpFill!: Phaser.GameObjects.Rectangle;
@@ -155,7 +155,9 @@ export default class BattleScene extends Phaser.Scene {
     if (
       !this.centerText ||
       !this.playerHpFill ||
-      !this.enemyHpFill
+      !this.enemyHpFill ||
+      !previousState?.gameState ||
+      !state.gameState
     ) {
       return;
     }
@@ -378,6 +380,10 @@ export default class BattleScene extends Phaser.Scene {
   }
 
   private updateHud(state: BattleViewState) {
+    if (!state.gameState) {
+        return;
+    }
+
     const playerRatio = Phaser.Math.Clamp(
       state.gameState.player_hp / 100,
       0,
