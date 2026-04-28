@@ -2,7 +2,6 @@ import dotenv from 'dotenv';
 import type { Request, Response } from 'express';
 import { signup, login, logout, validateSession } from './service.js';
 
-
 dotenv.config();
 
 export async function postSignup(req: Request, res: Response) {
@@ -58,10 +57,13 @@ export async function postLogout(req: Request, res: Response) {
 }
 
 export async function getValidate(req: Request, res: Response) {
-    const username = await validateSession(req.cookies.token);
-    if (username !== undefined) {
-        return res.status(200).json({ username, message: 'Valid session' });
+    const userData = await validateSession(req.cookies.token);
+    if (userData !== undefined) {
+        return res
+            .status(200)
+            .json({ username: userData, message: 'Valid session' });
     } else {
+        res.clearCookie('token');
         return res.status(401).json({ error: 'Invalid session' });
     }
 }
