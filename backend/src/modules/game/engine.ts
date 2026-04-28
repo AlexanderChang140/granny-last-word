@@ -7,26 +7,7 @@ import {
 } from './deck.js';
 import { scoreWord } from './word/validation.js';
 
-// State Definitions
-export interface Letter {
-    id: number;
-    letter: string;
-}
-
-export interface Action {
-    type: 'PLAYER_ACTION' | 'ENEMY_ACTION';
-    word?: number[];
-}
-
-export interface GameState {
-    player_hp: number;
-    enemy_hp: number;
-    turn_owner: 'player' | 'enemy';
-    status: 'running' | 'finished';
-    draw: Letter[];
-    discard: Letter[];
-    hand: Letter[];
-}
+import type { GameState, Letter } from '../../../../shared/types.js';
 
 /**
  * This should house all the core game logic. It is meant to be an intuitive interface for the game.

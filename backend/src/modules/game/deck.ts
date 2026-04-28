@@ -1,4 +1,4 @@
-import type { Letter } from './engine.js';
+import type { Letter } from '../../../../shared/types.js';
 
 function shuffle<T>(array: T[]): T[] {
     const shuffled = [...array];

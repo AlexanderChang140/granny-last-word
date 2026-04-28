@@ -1,4 +1,4 @@
-import type { GameState } from './engine.js';
+import type { GameState } from "../../../../shared/types.js";
 
 export type SessionData = {
     gameState?: GameState | undefined;

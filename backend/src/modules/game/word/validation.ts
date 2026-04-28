@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import type { Letter } from '../engine.js';
 import { toWord } from '../deck.js';
+import type { Letter } from '../../../../../shared/types.js';
 
 const WORD_SET = await generateWordSet();
 

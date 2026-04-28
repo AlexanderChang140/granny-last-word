@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { GameEngine, type GameState } from './engine.js';
+import { GameEngine } from './engine.js';
+import type { GameState } from '../../../../shared/types.js';
 
 describe('GameEngine.update', () => {
     const state: GameState = {
