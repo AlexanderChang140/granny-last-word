@@ -1,4 +1,4 @@
-import pool from "../../db.js";
+import pool from '../db/db.js';
 
 export type ForumPostRow = {
     post_id: number;
@@ -11,14 +11,14 @@ export async function getAllPosts(): Promise<ForumPostRow[]> {
     const result = await pool.query(
         `
         SELECT
-            fp.post_id,
+            fp.id,
             u.username,
             fp.content,
             fp.created_at
-        FROM "ForumPost" fp
-        JOIN "User" u ON fp.user_id = u.user_id
+        FROM forum_posts fp
+        JOIN user u ON fp.user_id = u.id
         ORDER BY fp.created_at ASC
-        `
+        `,
     );
 
     return result.rows;
@@ -26,18 +26,18 @@ export async function getAllPosts(): Promise<ForumPostRow[]> {
 
 export async function createPost(
     username: string,
-    content: string
+    content: string,
 ): Promise<ForumPostRow | null> {
     const trimmed = content.trim();
 
     if (!trimmed) return null;
     if (trimmed.length > 300) {
-        throw new Error("Post must be 300 characters or fewer");
+        throw new Error('Post must be 300 characters or fewer');
     }
 
     const userResult = await pool.query(
-        `SELECT user_id FROM "User" WHERE username = $1`,
-        [username]
+        `SELECT id FROM users WHERE username = $1`,
+        [username],
     );
 
     const userId = userResult.rows[0]?.user_id;
@@ -45,11 +45,11 @@ export async function createPost(
 
     const insertResult = await pool.query(
         `
-        INSERT INTO "ForumPost" (user_id, content)
+        INSERT INTO forum_posts (user_id, content)
         VALUES ($1, $2)
-        RETURNING post_id, content, created_at
+        RETURNING id, content, created_at
         `,
-        [userId, trimmed]
+        [userId, trimmed],
     );
 
     const created = insertResult.rows[0];
