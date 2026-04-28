@@ -16,7 +16,7 @@ export async function getAllPosts(): Promise<ForumPostRow[]> {
             fp.content,
             fp.created_at
         FROM forum_posts fp
-        JOIN user u ON fp.user_id = u.id
+        JOIN users u ON fp.user_id = u.id
         ORDER BY fp.created_at ASC
         `,
     );
