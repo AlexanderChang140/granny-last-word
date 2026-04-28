@@ -26,9 +26,9 @@ function App() {
 
                     <Route element={<ProtectedRoute />}>
                         <Route path="/game" element={<GamePage />} />
+                        <Route path="/menu" element={<MenuPage />} />
                     </Route>
                     <Route path="/*" element={<NotFound />} />
-                    <Route path="/menu" element={<MenuPage />} />
                     <Route path="/chat" element={<ChatPage />} />
                 </Routes>
             </BrowserRouter>
