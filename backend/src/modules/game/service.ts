@@ -1,6 +1,7 @@
-import type { Socket } from "socket.io";
-import { remove, set, update } from "./cache.js";
-import { GameEngine, type GameState } from "./engine.js";
+import type { Socket } from 'socket.io';
+import { get, remove, set, update } from './cache.js';
+import { GameEngine } from './engine.js';
+import type { GameState } from '../../../../shared/types.js';
 
 /**
  * START BATTLE:
@@ -8,21 +9,25 @@ import { GameEngine, type GameState } from "./engine.js";
  * Initializes a fresh state for this specific connection.
  */
 export async function startBattle(socket: Socket) {
-    const initialState = GameEngine.setupNewBattle();
+    const userId = socket.data.userData.id;
 
-    await set(socket.id, {
-        gameState: initialState,
-    });
+    let state = (await get(userId))?.gameState;
 
-    socket.emit("state_update", initialState);
+    if (!state) {
+        state = GameEngine.setupNewBattle();
+        await set(userId, { gameState: state });
+    }
+    socket.emit('state_update', state);
 }
 
 /**
  * PROCESS PLAYER ACTION:
  * Triggered when the user submits a word (Spacebar in the tester).
  */
-export async function submitWord(socket: Socket, payload: any) {
-    await updateGameState(socket.id, (state) => {
+export async function submitWord(socket: Socket, letters: number[]) {
+    const sessionId = socket.data.userData.id;
+
+    await updateGameState(sessionId, (state) => {
         if (
             !state ||
             state.turn_owner !== 'player' ||
@@ -38,21 +43,31 @@ export async function submitWord(socket: Socket, payload: any) {
         console.log('Processing Player Attack...');
         console.log('Enemy HP before attack:', state.enemy_hp);
 
-        let newState = GameEngine.update(state, {
-            type: 'PLAYER_ACTION',
-            word: payload.word,
-        });
+        const newState = GameEngine.submitWord(state, letters);
 
-        console.log("Enemy HP after attack:", newState.enemy_hp);
+        console.log('Enemy HP after attack:', newState.enemy_hp);
+        socket.emit('state_update', newState);
+        return newState;
+    });
+}
 
-        /**
-         * ENEMY TURN SIMULATION:
-         */
-        if (newState.turn_owner === 'enemy' && newState.status === "running") {
-            newState = GameEngine.update(newState, {
-                type: 'ENEMY_ACTION',
-            });
+export async function endTurn(socket: Socket) {
+    const sessionId = socket.data.userData.id;
+
+    await updateGameState(sessionId, (state) => {
+        if (
+            !state ||
+            state.turn_owner !== 'player' ||
+            state.status !== 'running'
+        ) {
+            console.log(
+                "ACTION BLOCKED - Not player's turn or battle not running",
+            );
+            console.log('State:', state);
+            return state;
         }
+
+        const newState = GameEngine.end_turn(state);
 
         socket.emit('state_update', newState);
         return newState;
@@ -64,8 +79,11 @@ export async function submitWord(socket: Socket, payload: any) {
  * Removes the player's state from the map when they disconnect to prevent memory leaks.
  */
 export function disconnect(socket: Socket) {
-    remove(socket.id);
-    console.log(`User disconnected: ${socket.id}`);
+    const sessionId = socket.data.userData.id;
+    remove(sessionId);
+    console.log(
+        `User disconnected: ${socket.data.userData.username} / ${socket.id}`,
+    );
 }
 
 async function updateGameState(

@@ -37,66 +37,71 @@ export class GameEngine {
         };
     }
 
-    /**
-     * This is where the majority of the game logic will be. This handles all the state transitions and game rules.
-     * @param state - The current HP and Turn status.
-     * @param action - Object containing 'type' (PLAYER_ACTION/ENEMY_ACTION) and optional data.
-     * @returns A brand new GameState object.
-     */
-    static update(state: GameState, action: Action): GameState {
+    static submitWord(state: GameState, word: number[]): GameState {
         // Create a copy so the original remains unchanged/immutable
         let nextState = { ...state };
 
-        console.log('Engine received action type:', action.type);
+        console.log('Engine received action type: submit_word');
 
-        // Handle Player Action
-        if (action.type === 'PLAYER_ACTION' && action.word) {
-            console.log('Match found! Reducing Enemy HP...');
-
-            // Check if letters of word exists in hand
-            if (!checkLetters(action.word, nextState.hand)) {
-                return nextState;
-            }
-
-            // Check and score if letters make up valid word
-            const letters = parseWord(action.word, nextState.hand);
-            const score = scoreWord(letters);
-            if (score === 0) {
-                return nextState;
-            }
-
-            // Move letters to discard
-            nextState = {
-                ...nextState,
-                ...useLetters(action.word, nextState.hand, nextState.discard),
-            };
-
-            // Draw new letters
-            nextState = {
-                ...nextState,
-                ...drawLetters(
-                    nextState.hand,
-                    nextState.draw,
-                    nextState.discard,
-                    getHandSize(nextState),
-                ),
-            };
-
-            nextState.enemy_hp -= score;
-            nextState.turn_owner = 'enemy';
+        if (state.turn_owner !== 'player') {
+            console.log('Cannot submit word: Not player turn');
         }
 
-        // Handle Enemy Turn
-        if (action.type === 'ENEMY_ACTION') {
-            nextState.player_hp -= 10; // Placeholder damage
-            nextState.turn_owner = 'player';
+        // Check if letters of word exists in hand
+        if (!checkLetters(word, nextState.hand)) {
+            console.log('Letters do not exist in hand');
+            return nextState;
         }
+
+        // Check and score if letters make up valid word
+        const letters = parseWord(word, nextState.hand);
+        const score = scoreWord(letters);
+        if (score === 0) {
+            console.log(`Invalid word: ${letters.map((l) => l.letter).join()}`);
+            return nextState;
+        }
+
+        console.log('Match found! Reducing Enemy HP...');
+
+        // Move letters to discard
+        nextState = {
+            ...nextState,
+            ...useLetters(word, nextState.hand, nextState.discard),
+        };
+
+        // Draw new letters
+        nextState = {
+            ...nextState,
+            ...drawLetters(
+                nextState.hand,
+                nextState.draw,
+                nextState.discard,
+                getHandSize(nextState),
+            ),
+        };
+
+        nextState.enemy_hp -= score;
 
         // Check Win/Loss Condition
         if (nextState.enemy_hp <= 0 || nextState.player_hp <= 0) {
             nextState.status = 'finished';
         }
 
+        return nextState;
+    }
+
+    static end_turn(state: GameState): GameState {
+        let nextState = { ...state };
+
+        console.log('Engine received action type: end_turn');
+
+        // Handle Enemy Turn
+        if (state.turn_owner !== 'player') {
+            console.log('Cannot end turn: Not player turn');
+        }
+
+        nextState.player_hp -= 10; // Placeholder damage
+        nextState.turn_owner = 'player';
         return nextState;
     }
 }
