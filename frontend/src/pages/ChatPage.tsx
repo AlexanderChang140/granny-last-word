@@ -17,36 +17,35 @@ export default function ChatPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
 
-    async function loadPosts() {
-        try {
-            setErrorMessage("");
-
-            const response = await fetch("/api/forum/posts", {
-                method: "GET",
-                credentials: "include",
-            });
-
-            if (response.status === 401) {
-                navigate("/");
-                return;
-            }
-
-            if (!response.ok) {
-                throw new Error("Failed to load posts");
-            }
-
-            const data: ForumPost[] = await response.json();
-            setPosts(data);
-        } catch {
-            setErrorMessage("Could not load forum posts.");
-        } finally {
-            setIsLoading(false);
-        }
-    }
-
     useEffect(() => {
+        async function loadPosts() {
+            try {
+                setErrorMessage("");
+
+                const response = await fetch("/api/forum/posts", {
+                    method: "GET",
+                    credentials: "include",
+                });
+
+                if (response.status === 401) {
+                    navigate("/");
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error("Failed to load posts");
+                }
+
+                const data: ForumPost[] = await response.json();
+                setPosts(data);
+            } catch {
+                setErrorMessage("Could not load forum posts.");
+            } finally {
+                setIsLoading(false);
+            }
+        }
         loadPosts();
-    }, []);
+    }, [navigate]);
 
     async function handleSend() {
         const trimmed = input.trim();
