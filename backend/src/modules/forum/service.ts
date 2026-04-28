@@ -1,7 +1,7 @@
 import pool from '../db/db.js';
 
 export type ForumPostRow = {
-    post_id: number;
+    id: number;
     username: string;
     content: string;
     created_at: string;
@@ -40,7 +40,7 @@ export async function createPost(
         [username],
     );
 
-    const userId = userResult.rows[0]?.user_id;
+    const userId = userResult.rows[0]?.id;
     if (!userId) return null;
 
     const insertResult = await pool.query(
@@ -55,7 +55,7 @@ export async function createPost(
     const created = insertResult.rows[0];
 
     return {
-        post_id: created.post_id,
+        id: created.id,
         username,
         content: created.content,
         created_at: created.created_at,
