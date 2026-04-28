@@ -5,3 +5,4 @@ DROP TABLE IF EXISTS game_state;
 DROP TABLE IF EXISTS battle_state;
 DROP TABLE IF EXISTS deck;
 DROP TABLE IF EXISTS used_words;
+DROP TABLE IF EXISTS forum_posts;
