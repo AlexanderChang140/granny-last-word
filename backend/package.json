@@ -8,6 +8,7 @@
         "test": "vitest"
     },
     "devDependencies": {
+        "@types/cookie": "^0.6.0",
         "@types/cookie-parser": "^1.4.10",
         "@types/express": "^5.0.6",
         "@types/node": "^25.3.2",
@@ -22,6 +23,7 @@
     "dependencies": {
         "argon2": "^0.44.0",
         "async-mutex": "^0.5.0",
+        "cookie": "^0.7.2",
         "cookie-parser": "^1.4.7",
         "dotenv": "^17.4.2",
         "express": "^5.2.1",
