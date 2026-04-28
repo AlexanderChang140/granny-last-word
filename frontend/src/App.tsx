@@ -4,11 +4,11 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import GamePage from './game/pages/GamePage';
 import NotFound from './pages/NotFound';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute from './modules/auth/components/ProtectedRoute';
 import { AuthProvider } from './modules/auth/AuthProvider';
-import AuthenticatedRoute from './components/AuthenticatedRoute';
-import MenuPage from "./pages/MenuPage";
-import ChatPage from "./pages/ChatPage";
+import MenuPage from './pages/MenuPage';
+import ChatPage from './pages/ChatPage';
+import AuthenticationRoutes from './modules/auth/components/AuthenticationRoutes';
 
 function App() {
     return (
@@ -19,7 +19,7 @@ function App() {
                         path="/"
                         element={<Navigate to="/login" replace />}
                     />
-                    <Route element={<AuthenticatedRoute />}>
+                    <Route element={<AuthenticationRoutes />}>
                         <Route path="/login" element={<LoginPage />} />
                         <Route path="/signup" element={<SignupPage />} />
                     </Route>

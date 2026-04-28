@@ -1,13 +1,13 @@
 import { Navigate, Outlet } from 'react-router';
-import useAuth from '../modules/auth/hooks/useAuth';
+import useAuth from '../hooks/useAuth';
 
-export default function ProtectedRoute() {
+export default function AutenticationRoutes() {
     const { isLoading, isAuthenticated } = useAuth();
 
     if (isLoading) return <div>Loading...</div>;
 
-    if (!isAuthenticated) {
-        return <Navigate to="/signup" replace />;
+    if (isAuthenticated) {
+        return <Navigate to="/menu" replace />;
     }
     return <Outlet />;
 }
