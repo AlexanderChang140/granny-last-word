@@ -1,43 +1,26 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import useAuth from '../modules/auth/hooks/useAuth';
 
 export default function LoginPage() {
     const navigate = useNavigate();
 
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [errorMessage, setErrorMessage] = useState("");
+    const { login } = useAuth();
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        setErrorMessage("");
+        setErrorMessage('');
         setIsSubmitting(true);
 
-        try {;
-            const response = await fetch('api/login', {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                credentials: "include",
-                body: JSON.stringify({
-                    username,
-                    password,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                setErrorMessage(data.error || "Invalid username or password");
-                return;
-            }
-
+        try {
+            await login(username, password);
             navigate("/menu");
-        } catch (error) {
-            console.error(error);
-            setErrorMessage("Could not connect to the server.");
+        } catch (err) {
+            setErrorMessage((err as Error).message);
         } finally {
             setIsSubmitting(false);
         }
@@ -70,15 +53,18 @@ export default function LoginPage() {
                         required
                     />
 
-                    {errorMessage && <p className="error-text">{errorMessage}</p>}
+                    {errorMessage && (
+                        <p className="error-text">{errorMessage}</p>
+                    )}
 
                     <button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? "Logging in..." : "Log In"}
+                        {isSubmitting ? 'Logging in...' : 'Log In'}
                     </button>
                 </form>
 
                 <p className="auth-switch">
-                    Don&apos;t have an account? <Link to="/signup">Sign up</Link>
+                    Don&apos;t have an account?{' '}
+                    <Link to="/signup">Sign up</Link>
                 </p>
             </div>
         </div>

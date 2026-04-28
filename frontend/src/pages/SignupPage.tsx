@@ -1,52 +1,36 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import useAuth from '../modules/auth/hooks/useAuth';
 
 export default function SignupPage() {
     const navigate = useNavigate();
 
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [errorMessage, setErrorMessage] = useState("");
-    const [successMessage, setSuccessMessage] = useState("");
+    const { signup } = useAuth();
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
-        setErrorMessage("");
-        setSuccessMessage("");
+        setErrorMessage('');
+        setSuccessMessage('');
 
         if (password !== confirmPassword) {
-            setErrorMessage("Passwords do not match.");
+            setErrorMessage('Passwords do not match.');
             return;
         }
 
         setIsSubmitting(true);
 
         try {
-            const response = await fetch('/api/signup', {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                credentials: "include",
-                body: JSON.stringify({
-                    username,
-                    password,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                setErrorMessage(data.error || "Could not sign up.");
-                return;
-            }
-
-            setSuccessMessage("Account created successfully.");
-            navigate("/");
-        } catch {
-            setErrorMessage("Could not connect to the server.");
+            await signup(username, password);
+            setSuccessMessage('Account created successfully.');
+            navigate('/login');
+        } catch (err) {
+            setErrorMessage((err as Error).message);
         } finally {
             setIsSubmitting(false);
         }
@@ -79,7 +63,9 @@ export default function SignupPage() {
                         required
                     />
 
-                    <label htmlFor="signup-confirm-password">Confirm Password</label>
+                    <label htmlFor="signup-confirm-password">
+                        Confirm Password
+                    </label>
                     <input
                         id="signup-confirm-password"
                         type="password"
@@ -89,11 +75,15 @@ export default function SignupPage() {
                         required
                     />
 
-                    {errorMessage && <p className="error-text">{errorMessage}</p>}
-                    {successMessage && <p className="success-text">{successMessage}</p>}
+                    {errorMessage && (
+                        <p className="error-text">{errorMessage}</p>
+                    )}
+                    {successMessage && (
+                        <p className="success-text">{successMessage}</p>
+                    )}
 
                     <button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? "Signing up..." : "Sign Up"}
+                        {isSubmitting ? 'Signing up...' : 'Sign Up'}
                     </button>
                 </form>
 
