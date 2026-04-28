@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+import useAuth from "../modules/auth/hooks/useAuth";
 
 type PlayerStats = {
   totalRuns: number;
@@ -16,6 +17,7 @@ export default function MenuPage() {
   // Later this can come from backend/session save data.
   const hasInProgressRun = false;
 
+  const { logout } = useAuth();
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
@@ -59,10 +61,9 @@ export default function MenuPage() {
     setShowLogoutModal(false);
   }
 
-  function handleConfirmLogout() {
-    // Frontend-only version:
-    // Later replace with logout API call if needed.
-    navigate("/");
+  async function handleConfirmLogout() {
+    await logout();
+    navigate("/login");
   }
 
   return (
