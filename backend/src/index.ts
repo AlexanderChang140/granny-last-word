@@ -2,7 +2,6 @@ import dotenv from 'dotenv';
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import router from './modules/example/routes.js';
 import authRouter from './modules/auth/routes.js';
 import { connect } from './modules/game/socket.js';
 import type {
@@ -38,7 +37,6 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
 app.use(express.json());
 
 // REST Routes (Auth/Settings)
-app.use('/', router);
 app.use('/api', authRouter);
 app.use('/api/forum', forumRouter);
 
