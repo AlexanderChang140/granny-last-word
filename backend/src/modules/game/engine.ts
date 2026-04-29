@@ -9,12 +9,20 @@ import { scoreWord } from './word/validation.js';
 
 import type { GameState, Letter } from '../../../../shared/types.js';
 
+const LEVEL_MAP: Record<number, number> = {
+    1: 100,
+    2: 125,
+    3: 150,
+    4: 175,
+    5: 200,
+};
+
 /**
  * This should house all the core game logic. It is meant to be an intuitive interface for the game.
  * Ideally, no databases or sockets should be touched here - it should just be logic.
  */
 export class GameEngine {
-    static setupNewBattle(): GameState {
+    static setupNewBattle(level: number = 1): GameState {
         const handSize = DEFAULT_HAND_SIZE;
         let draw = arrToLetters(['a', 'b', 'c', 'd', 'e', 'f', 't']);
         let hand: Letter[] = [];
@@ -28,7 +36,8 @@ export class GameEngine {
 
         return {
             player_hp: 100,
-            enemy_hp: 100,
+            enemy_hp: LEVEL_MAP[level] || 200, //200 used as fallback for levels above 5
+            level,
             turn_owner: 'player',
             status: 'running',
             draw,
@@ -45,23 +54,23 @@ export class GameEngine {
 
         if (state.turn_owner !== 'player') {
             console.log('Cannot submit word: Not player turn');
+            return state;
         }
 
         // Check if letters of word exists in hand
         if (!checkLetters(word, nextState.hand)) {
             console.log('Letters do not exist in hand');
-            return nextState;
+            return state;
         }
 
         // Check and score if letters make up valid word
         const letters = parseWord(word, nextState.hand);
         const score = scoreWord(letters);
+        console.log(`Score: ${score}`);
         if (score === 0) {
-            console.log(`Invalid word: ${letters.map((l) => l.letter).join()}`);
-            return nextState;
+            console.log('Invalid word');
+            return state;
         }
-
-        console.log('Match found! Reducing Enemy HP...');
 
         // Move letters to discard
         nextState = {
@@ -69,23 +78,9 @@ export class GameEngine {
             ...useLetters(word, nextState.hand, nextState.discard),
         };
 
-        // Draw new letters
-        nextState = {
-            ...nextState,
-            ...drawLetters(
-                nextState.hand,
-                nextState.draw,
-                nextState.discard,
-                getHandSize(nextState),
-            ),
-        };
-
         nextState.enemy_hp -= score;
 
-        // Check Win/Loss Condition
-        if (nextState.enemy_hp <= 0 || nextState.player_hp <= 0) {
-            nextState.status = 'finished';
-        }
+        nextState = this.checkBattleWinState(nextState);
 
         return nextState;
     }
@@ -100,8 +95,49 @@ export class GameEngine {
             console.log('Cannot end turn: Not player turn');
         }
 
-        nextState.player_hp -= 10; // Placeholder damage
+        // Draw new letters
+        nextState = {
+            ...nextState,
+            ...drawLetters(
+                nextState.hand,
+                nextState.draw,
+                nextState.discard,
+                getHandSize(nextState),
+            ),
+        };
+
+        // Scale damage based on level
+        const damagePerLevel = { 1: 10, 2: 15, 3: 20, 4: 25, 5: 30 };
+        const currentLevel = nextState.level as keyof typeof damagePerLevel;
+        console.log(`Current Level: ${currentLevel}`);
+        console.log(`Current Damage: ${damagePerLevel[currentLevel]}`);
+
+        nextState.player_hp -= damagePerLevel[currentLevel];
         nextState.turn_owner = 'player';
+
+        nextState = this.checkBattleWinState(nextState);
+
+        return nextState;
+    }
+
+    static checkBattleWinState(state: GameState) {
+        let nextState: GameState = { ...state };
+
+        if (nextState.player_hp <= 0) {
+            // Player dies -> total loss
+            nextState.status = 'finished';
+            nextState.result = 'GAME_LOST';
+        } else if (nextState.enemy_hp <= 0) {
+            // Enemy dies -> round win or game win if final level
+            nextState.status = 'finished';
+
+            if (nextState.level >= 5) {
+                // Game win
+                nextState.result = 'GAME_WON';
+            } else {
+                nextState.result = 'ROUND_WON';
+            }
+        }
         return nextState;
     }
 }

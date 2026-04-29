@@ -11,8 +11,10 @@ export interface Action {
 export interface GameState {
     player_hp: number;
     enemy_hp: number;
+    level: number;
     turn_owner: 'player' | 'enemy';
     status: 'running' | 'finished';
+    result?: 'ROUND_WON' | 'GAME_WON' | 'GAME_LOST';
     draw: Letter[];
     discard: Letter[];
     hand: Letter[];
