@@ -1,6 +1,6 @@
 import {
-    arrToLetters,
     checkLetters,
+    createWeightedDrawPile,
     drawLetters,
     parseWord,
     useLetters,
@@ -24,7 +24,8 @@ const LEVEL_MAP: Record<number, number> = {
 export class GameEngine {
     static setupNewBattle(level: number = 1): GameState {
         const handSize = DEFAULT_HAND_SIZE;
-        let draw = arrToLetters(['a', 'b', 'c', 'd', 'e', 'f', 't']);
+        const enemyMaxHp = LEVEL_MAP[level] || 200;
+        let draw = createWeightedDrawPile();
         let hand: Letter[] = [];
         for (let i = 0; i < handSize; i++) {
             const letter = draw.pop();
@@ -36,10 +37,14 @@ export class GameEngine {
 
         return {
             player_hp: 100,
-            enemy_hp: LEVEL_MAP[level] || 200, //200 used as fallback for levels above 5
+            player_max_hp: 100,
+            enemy_hp: enemyMaxHp, // 200 fallback for levels above 5
+            enemy_max_hp: enemyMaxHp,
             level,
+            turn_number: 1,
             turn_owner: 'player',
             status: 'running',
+            run_score: 0,
             draw,
             discard: [],
             hand,
@@ -54,13 +59,19 @@ export class GameEngine {
 
         if (state.turn_owner !== 'player') {
             console.log('Cannot submit word: Not player turn');
-            return state;
+            return {
+                ...state,
+                feedback: 'Wait for your turn',
+            };
         }
 
         // Check if letters of word exists in hand
         if (!checkLetters(word, nextState.hand)) {
             console.log('Letters do not exist in hand');
-            return state;
+            return {
+                ...state,
+                feedback: 'Invalid word\nTry again',
+            };
         }
 
         // Check and score if letters make up valid word
@@ -69,7 +80,10 @@ export class GameEngine {
         console.log(`Score: ${score}`);
         if (score === 0) {
             console.log('Invalid word');
-            return state;
+            return {
+                ...state,
+                feedback: 'Invalid word\nTry again',
+            };
         }
 
         // Move letters to discard
@@ -77,8 +91,18 @@ export class GameEngine {
             ...nextState,
             ...useLetters(word, nextState.hand, nextState.discard),
         };
+        nextState = {
+            ...withoutFeedback(nextState),
+            ...drawLetters(
+                nextState.hand,
+                nextState.draw,
+                nextState.discard,
+                getHandSize(nextState),
+            ),
+            run_score: nextState.run_score + score,
+        };
 
-        nextState.enemy_hp -= score;
+        nextState.enemy_hp -= score * 3;
 
         nextState = this.checkBattleWinState(nextState);
 
@@ -97,23 +121,25 @@ export class GameEngine {
 
         // Draw new letters
         nextState = {
-            ...nextState,
+            ...withoutFeedback(nextState),
             ...drawLetters(
                 nextState.hand,
                 nextState.draw,
                 nextState.discard,
                 getHandSize(nextState),
             ),
+            turn_owner: 'enemy',
         };
 
         // Scale damage based on level
-        const damagePerLevel = { 1: 10, 2: 15, 3: 20, 4: 25, 5: 30 };
+        const damagePerLevel = { 1: 10, 2: 12, 3: 14, 4: 16, 5: 18 };
         const currentLevel = nextState.level as keyof typeof damagePerLevel;
         console.log(`Current Level: ${currentLevel}`);
         console.log(`Current Damage: ${damagePerLevel[currentLevel]}`);
 
         nextState.player_hp -= damagePerLevel[currentLevel];
         nextState.turn_owner = 'player';
+        nextState.turn_number += 1;
 
         nextState = this.checkBattleWinState(nextState);
 
@@ -140,10 +166,30 @@ export class GameEngine {
         }
         return nextState;
     }
+
+    static continueToNextStage(state: GameState): GameState {
+        if (state.status !== 'finished' || state.result !== 'ROUND_WON') {
+            return state;
+        }
+
+        const nextLevel = Math.min(state.level + 1, 5);
+        const nextBattle = this.setupNewBattle(nextLevel);
+        return {
+            ...nextBattle,
+            player_hp: nextBattle.player_max_hp,
+            player_max_hp: state.player_max_hp,
+            run_score: state.run_score,
+        };
+    }
 }
 
-const DEFAULT_HAND_SIZE = 7;
+const DEFAULT_HAND_SIZE = 10;
 
 function getHandSize(gameState: GameState) {
     return DEFAULT_HAND_SIZE;
+}
+
+function withoutFeedback(state: GameState): GameState {
+    const { feedback: _feedback, ...rest } = state;
+    return rest;
 }

@@ -9,6 +9,7 @@ import type {
     ServerToClientEvents,
 } from '../../shared/types.js';
 import forumRouter from './modules/forum/routes.js';
+import gameRouter from './modules/game/routes.js';
 
 import cookie from 'cookie';
 import { validateSession } from './modules/auth/service.js';
@@ -39,6 +40,7 @@ app.use(express.json());
 // REST Routes (Auth/Settings)
 app.use('/api', authRouter);
 app.use('/api/forum', forumRouter);
+app.use('/api/game', gameRouter);
 
 io.use(async (socket, next) => {
     const rawCookies = socket.handshake.headers.cookie || '';

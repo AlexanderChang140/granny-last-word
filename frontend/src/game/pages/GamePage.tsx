@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import PhaserBattle from '../../components/PhaserBattle';
 import type { BattleViewState, LetterTileData } from '../types';
 import useGameState from '../hooks/useGameState';
@@ -12,14 +13,55 @@ function sortByOrder(a: LetterTileData, b: LetterTileData) {
 }
 
 export default function GamePage() {
-    const [connected] = useState(true);
+    const navigate = useNavigate();
+    const location = useLocation();
+    const startMode =
+        location.state?.startMode === 'continue' ? 'continue' : 'new';
+    const [connected, setConnected] = useState(socket.connected);
     const [lastSubmittedWord] = useState('');
     const [hasDiscardedThisTurn, setHasDiscardedThisTurn] = useState(false);
+    const previousTurnRef = useRef<number | null>(null);
 
-    const { gameState, tiles, setTiles } = useGameState();
-
+    const { gameState, tiles, setTiles } = useGameState(startMode);
 
     const hasBattleStarted = gameState != null;
+    const showDefeatModal =
+        gameState?.status === 'finished' && gameState.result === 'GAME_LOST';
+    const showRoundWonModal =
+        gameState?.status === 'finished' && gameState.result === 'ROUND_WON';
+    const showGameWonModal =
+        gameState?.status === 'finished' && gameState.result === 'GAME_WON';
+    useEffect(() => {
+        function handleConnect() {
+            setConnected(true);
+        }
+        function handleDisconnect() {
+            setConnected(false);
+        }
+
+        socket.on('connect', handleConnect);
+        socket.on('disconnect', handleDisconnect);
+        return () => {
+            socket.off('connect', handleConnect);
+            socket.off('disconnect', handleDisconnect);
+        };
+    }, []);
+
+    useEffect(() => {
+        const turnNumber = gameState?.turn_number;
+        if (turnNumber == null) return;
+
+        if (previousTurnRef.current == null) {
+            previousTurnRef.current = turnNumber;
+            return;
+        }
+
+        if (turnNumber !== previousTurnRef.current) {
+            setHasDiscardedThisTurn(false);
+            previousTurnRef.current = turnNumber;
+        }
+    }, [gameState?.turn_number]);
+
     const isPlayerTurn =
         hasBattleStarted &&
         gameState.turn_owner === 'player' &&
@@ -105,10 +147,6 @@ export default function GamePage() {
         });
     }
 
-    function handleStartBattle() {
-        socket.emit('start_battle');
-    }
-
     function moveTileToWord(tileId: number, insertIndex?: number) {
         moveTile(tileId, 'word', insertIndex);
     }
@@ -125,13 +163,17 @@ export default function GamePage() {
         if (!isPlayerTurn) return;
 
         setTiles((prev) => {
+            const upper = letter.toUpperCase();
             const hand = prev
                 .filter((tile) => tile.zone === 'hand')
                 .sort(sortByOrder);
+            const discard = prev
+                .filter((tile) => tile.zone === 'discard')
+                .sort(sortByOrder);
 
-            const target = hand.find(
-                (tile) => tile.letter.toUpperCase() === letter.toUpperCase(),
-            );
+            const target =
+                hand.find((tile) => tile.letter.toUpperCase() === upper) ??
+                discard.find((tile) => tile.letter.toUpperCase() === upper);
             if (!target) return prev;
 
             const remaining = prev
@@ -186,7 +228,6 @@ export default function GamePage() {
 
     function handleEndTurn() {
         if (!hasBattleStarted) return;
-        setHasDiscardedThisTurn(false);
         socket.emit('end_turn');
     }
 
@@ -227,6 +268,20 @@ export default function GamePage() {
         setHasDiscardedThisTurn(true);
     }
 
+    function handleStartNewGame() {
+        setHasDiscardedThisTurn(false);
+        socket.emit('start_battle', true);
+    }
+
+    function handleContinueStage() {
+        setHasDiscardedThisTurn(false);
+        socket.emit('continue_stage');
+    }
+
+    function handleReturnToMenu() {
+        navigate('/menu');
+    }
+
     const phaserState: BattleViewState = {
         connected,
         battleStarted: hasBattleStarted,
@@ -238,21 +293,6 @@ export default function GamePage() {
     return (
         <div className="game-page">
             <div className="battle-layout">
-                {!hasBattleStarted && (
-                    <div className="start-overlay">
-                        <div className="start-overlay-card">
-                            <h1>Granny&apos;s Last Word</h1>
-                            <p>Enter the battle and build words to attack.</p>
-                            <button
-                                className="battle-button start big"
-                                onClick={handleStartBattle}
-                            >
-                                Start Battle
-                            </button>
-                        </div>
-                    </div>
-                )}
-
                 <PhaserBattle
                     state={phaserState}
                     onTileToWord={moveTileToWord}
@@ -313,6 +353,86 @@ export default function GamePage() {
                     </button>
                 </div>
             </div>
+
+            {showDefeatModal && (
+                <div className="menu-modal-overlay" onClick={handleReturnToMenu}>
+                    <div className="menu-modal" onClick={(e) => e.stopPropagation()}>
+                        <h2 className="menu-modal-title">Defeated</h2>
+                        <p className="menu-modal-text">
+                            Granny has fallen. What would you like to do?
+                        </p>
+
+                        <div className="menu-modal-actions two-column">
+                            <button
+                                className="menu-button primary"
+                                onClick={handleStartNewGame}
+                            >
+                                Start New Game
+                            </button>
+                            <button
+                                className="menu-button"
+                                onClick={handleReturnToMenu}
+                            >
+                                Main Menu
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showRoundWonModal && (
+                <div className="menu-modal-overlay" onClick={handleReturnToMenu}>
+                    <div className="menu-modal" onClick={(e) => e.stopPropagation()}>
+                        <h2 className="menu-modal-title">Stage Cleared</h2>
+                        <p className="menu-modal-text">
+                            Stage {gameState?.level} complete! Continue to stage{' '}
+                            {(gameState?.level ?? 1) + 1}?
+                        </p>
+
+                        <div className="menu-modal-actions two-column">
+                            <button
+                                className="menu-button primary"
+                                onClick={handleContinueStage}
+                            >
+                                Continue
+                            </button>
+                            <button
+                                className="menu-button"
+                                onClick={handleReturnToMenu}
+                            >
+                                Main Menu
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showGameWonModal && (
+                <div className="menu-modal-overlay" onClick={handleReturnToMenu}>
+                    <div className="menu-modal" onClick={(e) => e.stopPropagation()}>
+                        <h2 className="menu-modal-title">Congratulations!</h2>
+                        <p className="menu-modal-text">
+                            You cleared all 5 stages. Final run score:{' '}
+                            {gameState?.run_score ?? 0}
+                        </p>
+
+                        <div className="menu-modal-actions two-column">
+                            <button
+                                className="menu-button primary"
+                                onClick={handleStartNewGame}
+                            >
+                                Start New Game
+                            </button>
+                            <button
+                                className="menu-button"
+                                onClick={handleReturnToMenu}
+                            >
+                                Main Menu
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

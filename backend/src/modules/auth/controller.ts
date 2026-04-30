@@ -16,7 +16,7 @@ export async function postSignup(req: Request, res: Response) {
     if (token) {
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'prod',
+            secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             maxAge: 1000 * 60 * 60,
         });
@@ -40,7 +40,7 @@ export async function postLogin(req: Request, res: Response) {
     if (token) {
         res.cookie('token', token, {
             httpOnly: true,
-            secure: true,
+            secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
             maxAge: 1000 * 60 * 60,
         });
@@ -51,7 +51,7 @@ export async function postLogin(req: Request, res: Response) {
 }
 
 export async function postLogout(req: Request, res: Response) {
-    logout(req.cookies.token);
+    await logout(req.cookies.token);
     res.clearCookie('token');
     return res.status(200).json({ message: 'Logged out' });
 }
