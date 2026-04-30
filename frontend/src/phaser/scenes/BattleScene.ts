@@ -34,6 +34,8 @@ export default class BattleScene extends Phaser.Scene {
 
   private playerHpFill!: Phaser.GameObjects.Rectangle;
   private enemyHpFill!: Phaser.GameObjects.Rectangle;
+  private playerHpText!: Phaser.GameObjects.Text;
+  private enemyHpText!: Phaser.GameObjects.Text;
   private centerText!: Phaser.GameObjects.Text;
 
   constructor() {
@@ -85,8 +87,13 @@ export default class BattleScene extends Phaser.Scene {
     );
 
     this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
-      const key = event.key.toUpperCase();
+      const codeMatch = /^Key([A-Z])$/.exec(event.code);
+      if (codeMatch) {
+        eventBus.emit("letterKeyPressed", { letter: codeMatch[1] });
+        return;
+      }
 
+      const key = event.key.toUpperCase();
       if (/^[A-Z]$/.test(key)) {
         eventBus.emit("letterKeyPressed", { letter: key });
       }
@@ -156,7 +163,6 @@ export default class BattleScene extends Phaser.Scene {
       !this.centerText ||
       !this.playerHpFill ||
       !this.enemyHpFill ||
-      !previousState?.gameState ||
       !state.gameState
     ) {
       return;
@@ -165,7 +171,7 @@ export default class BattleScene extends Phaser.Scene {
     this.updateHud(state);
     this.syncTiles(state.tiles);
 
-    if (previousState) {
+    if (previousState?.gameState) {
       if (previousState.gameState.enemy_hp > state.gameState.enemy_hp) {
         this.playEnemyHit();
       }
@@ -272,8 +278,30 @@ export default class BattleScene extends Phaser.Scene {
 
     if (isPlayer) {
       this.playerHpFill = fill;
+      this.playerHpText = this.add.text(
+        x + HP_BAR_WIDTH / 2,
+        y + 18,
+        "100/100",
+        {
+          fontFamily: "Arial",
+          fontSize: "14px",
+          color: "#fff7e8",
+          fontStyle: "bold",
+        },
+      ).setOrigin(0.5);
     } else {
       this.enemyHpFill = fill;
+      this.enemyHpText = this.add.text(
+        x + HP_BAR_WIDTH / 2,
+        y + 18,
+        "100/100",
+        {
+          fontFamily: "Arial",
+          fontSize: "14px",
+          color: "#fff7e8",
+          fontStyle: "bold",
+        },
+      ).setOrigin(0.5);
     }
   }
 
@@ -385,26 +413,37 @@ export default class BattleScene extends Phaser.Scene {
     }
 
     const playerRatio = Phaser.Math.Clamp(
-      state.gameState.player_hp / 100,
+      state.gameState.player_hp / state.gameState.player_max_hp,
       0,
       1,
     );
-    const enemyRatio = Phaser.Math.Clamp(state.gameState.enemy_hp / 100, 0, 1);
+    const enemyRatio = Phaser.Math.Clamp(
+      state.gameState.enemy_hp / state.gameState.enemy_max_hp,
+      0,
+      1,
+    );
 
     this.playerHpFill.width = HP_BAR_WIDTH * playerRatio;
     this.enemyHpFill.width = HP_BAR_WIDTH * enemyRatio;
+    this.playerHpText.setText(
+      `${Math.max(0, state.gameState.player_hp)}/${state.gameState.player_max_hp}`,
+    );
+    this.enemyHpText.setText(
+      `${Math.max(0, state.gameState.enemy_hp)}/${state.gameState.enemy_max_hp}`,
+    );
 
-    const turnLabel =
+    const defaultLabel =
       state.gameState.status === "finished"
         ? state.gameState.enemy_hp <= 0
           ? "Victory!"
           : "Defeat!"
         : state.gameState.turn_owner === "player"
-          ? "Your Turn"
+          ? `Score ${state.gameState.run_score} • Turn ${state.gameState.turn_number}`
           : "Enemy Turn";
+    const centerLabel = state.gameState.feedback ?? defaultLabel;
 
     this.centerText.setText(
-      `${state.connected ? "Connected" : "Connecting..."}\n${turnLabel}`,
+      `${state.connected ? "Connected" : "Connecting..."} • Stage ${state.gameState.level}/5\n${centerLabel}`,
     );
   }
 

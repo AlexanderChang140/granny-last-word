@@ -46,13 +46,10 @@ export function drawLetters(
     let newDraw = [...draw];
     let newDiscard = [...discard];
 
-    while (
-        newHand.length < handSize &&
-        (newDraw.length > 0 || newDiscard.length > 0)
-    ) {
+    while (newHand.length < handSize) {
         if (newDraw.length === 0) {
-            newDraw = shuffle(newDiscard);
-            newDiscard = [];
+            const nextOffset = getNextLetterId(newHand, newDraw, newDiscard);
+            newDraw = createWeightedDrawPile(nextOffset);
         }
 
         const drawnLetter = newDraw.pop();
@@ -82,6 +79,38 @@ export function arrToLetters(arr: string[], offset: number = 0): Letter[] {
     return letters;
 }
 
+export function createWeightedDrawPile(offset: number = 0): Letter[] {
+    const weightedLetters = [
+        ...repeatLetter('e', 13),
+        ...repeatLetter('a', 12),
+        ...repeatLetter('i', 8),
+        ...repeatLetter('r', 8),
+        ...repeatLetter('s', 8),
+        ...repeatLetter('n', 6),
+        ...repeatLetter('o', 5),
+        ...repeatLetter('t', 5),
+        ...repeatLetter('l', 4),
+        ...repeatLetter('u', 4),
+        ...repeatLetter('d', 3),
+        ...repeatLetter('g', 2),
+        ...repeatLetter('b', 2),
+        ...repeatLetter('c', 3),
+        ...repeatLetter('m', 2),
+        ...repeatLetter('p', 2),
+        ...repeatLetter('f', 2),
+        ...repeatLetter('h', 2),
+        ...repeatLetter('v', 2),
+        ...repeatLetter('w', 2),
+        ...repeatLetter('y', 2),
+        ...repeatLetter('k', 1),
+        ...repeatLetter('j', 1),
+        ...repeatLetter('x', 1),
+        ...repeatLetter('q', 1),
+        ...repeatLetter('z', 1),
+    ];
+    return arrToLetters(shuffle(weightedLetters), offset);
+}
+
 export function toWord(letters: Letter[]) {
     let word = [];
     for (const letter of letters) {
@@ -102,4 +131,18 @@ export function count(word: Letter[]) {
     }
 
     return counts;
+}
+
+function repeatLetter(letter: string, count: number): string[] {
+    return Array.from({ length: count }, () => letter);
+}
+
+function getNextLetterId(...groups: readonly Letter[][]): number {
+    let maxId = -1;
+    for (const group of groups) {
+        for (const letter of group) {
+            maxId = Math.max(maxId, letter.id);
+        }
+    }
+    return maxId + 1;
 }

@@ -58,3 +58,12 @@ CREATE TABLE IF NOT EXISTS forum_posts (
   content     VARCHAR(300) NOT NULL,
   created_at  TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS player_stats (
+  user_id           INT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  total_runs        INT NOT NULL DEFAULT 0,
+  best_score        INT NOT NULL DEFAULT 0,
+  enemies_defeated  INT NOT NULL DEFAULT 0,
+  longest_word      TEXT NOT NULL DEFAULT '-',
+  last_run_result   TEXT NOT NULL DEFAULT 'No runs yet'
+);

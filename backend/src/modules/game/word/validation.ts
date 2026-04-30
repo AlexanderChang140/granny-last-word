@@ -1,9 +1,9 @@
-import { readFile } from 'node:fs/promises';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { toWord } from '../deck.js';
 import type { Letter } from '../../../../../shared/types.js';
 
-const WORD_SET = await generateWordSet();
+const WORD_SET = generateWordSet();
 
 const SCORE_MAP: Record<string, number> = {
     A: 1,
@@ -48,14 +48,22 @@ export function scoreWord(letters: Letter[]) {
     return score;
 }
 
-async function generateWordSet(): Promise<Set<string>> {
-    const filePath = path.join(process.cwd(), 'dictionary.txt');
+function generateWordSet(): Set<string> {
+    const candidates = [
+        path.resolve(process.cwd(), 'dictionary.txt'),
+        path.resolve(process.cwd(), 'backend/dictionary.txt'),
+    ];
+    const filePath = candidates.find((candidate) => existsSync(candidate));
 
     try {
-        const data = await readFile(filePath, 'utf-8');
+        if (!filePath) {
+            throw new Error('dictionary.txt not found');
+        }
+        const data = readFileSync(filePath, 'utf-8');
         const words = data
             .split(/\r?\n/)
-            .filter((word) => word.trim().length > 0);
+            .map((word) => word.trim().toUpperCase())
+            .filter((word) => word.length > 0);
         return new Set(words);
     } catch (error) {
         console.error('Could not read dictionary file:', error);

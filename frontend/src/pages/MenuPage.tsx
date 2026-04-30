@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import useAuth from "../modules/auth/hooks/useAuth";
 
@@ -10,35 +10,71 @@ type PlayerStats = {
   lastRunResult: string;
 };
 
+type RunProgress = {
+  hasInProgressRun: boolean;
+  currentStage: number;
+  runScore: number;
+  status: string;
+  result: string | null;
+};
+
 export default function MenuPage() {
   const navigate = useNavigate();
-
-  // Frontend-only placeholder state for now.
-  // Later this can come from backend/session save data.
-  const hasInProgressRun = false;
+  const [hasInProgressRun, setHasInProgressRun] = useState(false);
+  const [progress, setProgress] = useState<RunProgress | null>(null);
 
   const { logout } = useAuth();
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [stats, setStats] = useState<PlayerStats>({
+    totalRuns: 0,
+    bestScore: 0,
+    enemiesDefeated: 0,
+    longestWord: "-",
+    lastRunResult: "No runs yet",
+  });
 
-  const stats = useMemo<PlayerStats>(
-    () => ({
-      totalRuns: 0,
-      bestScore: 0,
-      enemiesDefeated: 0,
-      longestWord: "-",
-      lastRunResult: "No runs yet",
-    }),
-    []
-  );
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const res = await fetch("/api/game/stats", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as PlayerStats;
+        setStats(data);
+      } catch {
+        // Keep default fallback stats when request fails.
+      }
+    }
+
+    async function loadProgress() {
+      try {
+        const res = await fetch("/api/game/progress", {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as RunProgress;
+        setProgress(data);
+        setHasInProgressRun(data.hasInProgressRun);
+      } catch {
+        setHasInProgressRun(false);
+      }
+    }
+
+    loadStats();
+    loadProgress();
+  }, []);
 
   function handleStartNewRun() {
-    navigate("/game");
+    navigate("/game", { state: { startMode: "new" } });
   }
 
   function handleContinueRun() {
     if (!hasInProgressRun) return;
-    navigate("/game");
+    navigate("/game", { state: { startMode: "continue" } });
   }
 
   function handleOpenStats() {
@@ -103,6 +139,11 @@ export default function MenuPage() {
               Log Out
             </button>
           </div>
+          {progress?.hasInProgressRun && (
+            <p className="menu-helper-text">
+              Stage {progress.currentStage}/5 • Run Score {progress.runScore}
+            </p>
+          )}
         </section>
       </main>
 
